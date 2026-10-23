@@ -203,14 +203,6 @@ mvn clean package
 </dependency>
 ```
 
----
-
-## 📝 License
-
-This project is distributed under the [MIT License](LICENSE).
-
----
-
 ## 🤝 Contributing
 
 - Open an issue for bug reports or feature requests
