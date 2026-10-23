@@ -22,7 +22,7 @@ PhoenixCraft, PhoenixFish balıkçılık eklentisi için bağımsız bir **craft
 ### Gereksinimler
 
 - **Paper 1.21+** (Java 21)
-- **PhoenixFish 1.3.0+** — zorunlu bağımlılık (`depend: [PhoenixFish]`)
+- **PhoenixFish 1.3.1+** — zorunlu bağımlılık (`depend: [PhoenixFish]`)
 
 ### Adımlar
 
