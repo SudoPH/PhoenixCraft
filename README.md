@@ -125,7 +125,7 @@ PhoenixCraft gives players a menu to craft the custom fishing rods and bait of P
 ### Requirements (planned)
 
 * **Paper 1.21+** (Java 21)
-* **PhoenixFish 1.3.1 or newer.** This is a hard dependency (`depend: [PhoenixFish]` in `plugin.yml`). PhoenixFish 1.3.1 has not been published yet either.
+* **PhoenixFish 1.3.3 or newer.** This is a hard dependency (`depend: [PhoenixFish]` in `plugin.yml`). PhoenixFish 1.3.1 has not been published yet either.
 
 ### Planned steps
 
