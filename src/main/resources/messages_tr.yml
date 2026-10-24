@@ -78,8 +78,8 @@ detail-back-name: "<yellow>« Geri Dön"
 detail-back-lore: "<dark_gray>Kategori menüsüne dön."
 
 # ----- Üretim Sonuçları -----
-craft-success-single: "<green>✔ Üretildi: <white>%item%</white> <dark_gray>(+%xp% Zanaat XP)</green>"
-craft-success-bulk: "<green>✔ <white>%count%x</white> üretildi: <white>%item%</white> <dark_gray>(+%xp% Zanaat XP)</green>"
+craft-success-single: "<green>✔ <white>%item%</white> <dark_gray>(+%xp% XP)</green>"
+craft-success-bulk: "<green>✔ <white>%count%x</white> <dark_gray>%item% <dark_gray>(+%xp% XP)</green>"
 craft-fail-materials: "<red>✖ Gerekli malzemelerin tamamına sahip değilsin!</red>"
 craft-fail-level: "<red>✖ Yetersiz level! Gerekli: <yellow>%required%</yellow> | Senin: %current%</red>"
 craft-recipe-unknown: "<red>✖ Bilinmeyen tarif.</red>"
@@ -205,6 +205,27 @@ achievement-cosmic-crafter-desc: "Efsanevi Cosmic Rod'u üret."
 
 achievement-lunar-moth-name: "Usta Yem Yapıcı"
 achievement-lunar-moth-desc: "Efsanevi Lunar Moth yemini üret."
+
+# Faz 0.7.0: yeni başarım isimleri ve açıklamaları
+achievement-worm-master-name: "Solucan Ustası"
+achievement-worm-master-desc: "100 solucan üret."
+
+achievement-rod-specialist-name: "Olta Uzmanı"
+achievement-rod-specialist-desc: "Toplam 50 olta üret."
+
+achievement-xp-hoarder-name: "XP Biriktirici"
+achievement-xp-hoarder-desc: "Üretimden toplam 5000 XP kazan."
+
+achievement-discovery-master-name: "Keşif Ustası"
+achievement-discovery-master-desc: "10 farklı tarif keşfet."
+
+# Faz 0.7.0: ilerleme + tier göstergesi
+achievement-progress: "<gray>İlerleme: <yellow>%current%<dark_gray>/<white>%target%"
+achievement-tier-bronze: "<#CD7F32>[BRONZ]"
+achievement-tier-silver: "<#C0C0C0>[GÜMÜŞ]"
+achievement-tier-gold: "<gold>[ALTIN]"
+achievement-tier-diamond: "<aqua>[ELMAS]"
+achievement-tier-none: ""
 
 # ----- Ana Menü — Yeni Butonlar (İstatistik ve Başarımlar) -----
 main-menu-stats-name: "<aqua>İSTATİSTİK"

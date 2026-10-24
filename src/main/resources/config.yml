@@ -9,6 +9,68 @@
 # ============================================================
 
 # ============================================================
+# Notification Settings (Faz 0.9.0 — Modular)
+# ============================================================
+# Controls which messages players see. Every notification type
+# can be independently enabled or disabled.
+#
+# Players who find the chat too noisy can ask the admin to turn
+# off specific messages here. Or the admin can disable all
+# notifications and keep only the GUI.
+# ============================================================
+notifications:
+  # ─── Craft Success ───
+  # Message sent when a craft succeeds ("✔ Hardwood Rod (+5 XP)")
+  craft-success-chat: true
+  # Sound played on successful craft
+  craft-success-sound: true
+
+  # ─── Craft Fail ───
+  # Message sent when a craft fails (materials/level)
+  craft-fail-chat: true
+  # Sound played on failed craft
+  craft-fail-sound: true
+
+  # ─── Crafting Level-Up ───
+  # Chat message when crafting level increases
+  crafting-level-up-chat: true
+  # Title shown on crafting level-up
+  crafting-level-up-title: true
+  # Sound played on crafting level-up
+  crafting-level-up-sound: true
+
+  # ─── Achievement Unlock ───
+  # Chat message when an achievement is unlocked
+  achievement-chat: true
+  # Title shown on achievement unlock
+  achievement-title: true
+  # Sound played on achievement unlock
+  achievement-sound: true
+
+  # ─── Discovery (First Craft) ───
+  # Chat message when discovering a new recipe
+  discovery-chat: true
+  # Title shown on discovery
+  discovery-title: true
+  # Sound played on discovery
+  discovery-sound: true
+
+  # ─── Economy ───
+  # Chat message when fee is charged (only shown if fee > 0)
+  economy-fee-chat: false
+
+  # ─── Global Sound Kill Switch ───
+  # If false, ALL sounds from PhoenixCraft are disabled
+  # (overrides all individual sound settings above)
+  all-sounds: true
+
+  # ─── Global Chat Kill Switch ───
+  # If false, ALL chat messages from PhoenixCraft are disabled
+  # (overrides all individual chat settings above)
+  # WARNING: This also disables error messages (e.g. "insufficient materials")
+  all-chat: true
+
+# ============================================================
 # General Settings
 # ============================================================
 settings:
@@ -578,20 +640,32 @@ achievements:
   unlock-sound: "UI_TOAST_CHALLENGE_COMPLETE"
 
   # ============================================================
-  # Achievement Definitions
+  # Achievement Definitions (Faz 0.7.0 — overhauled)
   # ============================================================
   # Each achievement has:
-  #   name        — message key in messages_*.yml for display name
-  #   description — message key in messages_*.yml for description
-  #   type        — one of:
-  #                   FIRST_CRAFT     (unlocked on the player's first craft ever)
-  #                   TOTAL_CRAFTS    (target = integer, total crafts needed)
-  #                   UNIQUE_RECIPES  (target = integer, distinct recipes crafted)
-  #                   BULK_CRAFT      (target = integer, single bulk craft of N+ items)
-  #                   RECIPE_CRAFTED  (target = recipe id, craft this recipe once)
-  #   target      — see type above
-  #   reward-commands — list of console commands run on unlock
-  #                     use %player% as a placeholder for the player name
+  #
+  #   name           — message key in messages_*.yml for display name
+  #   description    — message key in messages_*.yml for description
+  #   type           — one of:
+  #                      FIRST_CRAFT       (first craft ever, no target)
+  #                      TOTAL_CRAFTS      (target = integer)
+  #                      UNIQUE_RECIPES    (target = integer, distinct recipes)
+  #                      BULK_CRAFT        (target = integer, single bulk of N+)
+  #                      RECIPE_CRAFTED    (target = recipe id, craft once)
+  #                      PER_RECIPE_COUNT  (target = "recipe_id:count", craft one recipe N times)
+  #                      CATEGORY_CRAFTS   (target = "category:count", e.g. "rod:50")
+  #                      TOTAL_XP_EARNED   (target = integer, total XP from crafting)
+  #                      FIRST_DISCOVERY   (target = integer, discover N recipes)
+  #
+  #   target         — see type above (string)
+  #   tier           — visual tier: "bronze", "silver", "gold", "diamond", or "none"
+  #   reward-commands — list of console commands (use %player% placeholder)
+  #   reward-items   — list of items to give on unlock:
+  #                      reward-items:
+  #                        1:
+  #                          material: DIAMOND
+  #                          amount: 3
+  #                          custom-model-data: 0
   # ============================================================
   list:
     first-craft:
@@ -599,6 +673,7 @@ achievements:
       description: "achievement-first-craft-desc"
       type: "FIRST_CRAFT"
       target: ""
+      tier: "bronze"
       reward-commands:
         - "give %player% stick 1"
 
@@ -607,6 +682,7 @@ achievements:
       description: "achievement-apprentice-desc"
       type: "TOTAL_CRAFTS"
       target: "10"
+      tier: "bronze"
       reward-commands:
         - "give %player% iron_ingot 5"
 
@@ -615,6 +691,7 @@ achievements:
       description: "achievement-journeyman-desc"
       type: "TOTAL_CRAFTS"
       target: "50"
+      tier: "silver"
       reward-commands:
         - "give %player% gold_ingot 5"
 
@@ -623,22 +700,35 @@ achievements:
       description: "achievement-master-desc"
       type: "TOTAL_CRAFTS"
       target: "100"
+      tier: "gold"
       reward-commands:
         - "give %player% diamond 5"
+      reward-items:
+        1:
+          material: DIAMOND
+          amount: 3
+          custom-model-data: 0
 
     legendary-crafter:
       name: "achievement-legendary-name"
       description: "achievement-legendary-desc"
       type: "TOTAL_CRAFTS"
       target: "500"
+      tier: "diamond"
       reward-commands:
         - "give %player% netherite_ingot 1"
+      reward-items:
+        1:
+          material: NETHERITE_INGOT
+          amount: 1
+          custom-model-data: 0
 
     diverse-crafter:
       name: "achievement-diverse-name"
       description: "achievement-diverse-desc"
       type: "UNIQUE_RECIPES"
       target: "5"
+      tier: "bronze"
       reward-commands:
         - "give %player% emerald 3"
 
@@ -647,6 +737,7 @@ achievements:
       description: "achievement-bulk-master-desc"
       type: "BULK_CRAFT"
       target: "32"
+      tier: "silver"
       reward-commands:
         - "give %player% experience_bottle 5"
 
@@ -655,6 +746,7 @@ achievements:
       description: "achievement-first-rod-desc"
       type: "RECIPE_CRAFTED"
       target: "hardwood_rod"
+      tier: "bronze"
       reward-commands:
         - "give %player% experience_bottle 1"
 
@@ -663,6 +755,7 @@ achievements:
       description: "achievement-cosmic-crafter-desc"
       type: "RECIPE_CRAFTED"
       target: "cosmic_rod"
+      tier: "diamond"
       reward-commands:
         - "give %player% netherite_ingot 2"
         - "effect give %player% minecraft:glowing 30 1"
@@ -672,5 +765,43 @@ achievements:
       description: "achievement-lunar-moth-desc"
       type: "RECIPE_CRAFTED"
       target: "lunar_moth"
+      tier: "gold"
       reward-commands:
         - "give %player% phantom_membrane 5"
+
+    # Faz 0.7.0: new achievement types
+    worm-master:
+      name: "achievement-worm-master-name"
+      description: "achievement-worm-master-desc"
+      type: "PER_RECIPE_COUNT"
+      target: "worm:100"
+      tier: "silver"
+      reward-commands:
+        - "give %player% emerald 10"
+
+    rod-specialist:
+      name: "achievement-rod-specialist-name"
+      description: "achievement-rod-specialist-desc"
+      type: "CATEGORY_CRAFTS"
+      target: "rod:50"
+      tier: "gold"
+      reward-commands:
+        - "give %player% diamond 5"
+
+    xp-hoarder:
+      name: "achievement-xp-hoarder-name"
+      description: "achievement-xp-hoarder-desc"
+      type: "TOTAL_XP_EARNED"
+      target: "5000"
+      tier: "gold"
+      reward-commands:
+        - "give %player% experience_bottle 10"
+
+    discovery-master:
+      name: "achievement-discovery-master-name"
+      description: "achievement-discovery-master-desc"
+      type: "FIRST_DISCOVERY"
+      target: "10"
+      tier: "diamond"
+      reward-commands:
+        - "give %player% netherite_scrap 1"

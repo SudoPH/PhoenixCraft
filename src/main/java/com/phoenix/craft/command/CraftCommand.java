@@ -2,9 +2,11 @@ package com.phoenix.craft.command;
 
 import com.phoenix.craft.PhoenixCraft;
 import com.phoenix.craft.achievements.AchievementManager;
+import com.phoenix.craft.blackmarket.BlackMarketManager;
 import com.phoenix.craft.economy.EconomyManager;
 import com.phoenix.craft.gui.CraftingGUIManager;
 import com.phoenix.craft.recipes.RecipeManager;
+import com.phoenix.craft.rental.RentalManager;
 import com.phoenix.craft.stats.StatsManager;
 import com.phoenix.craft.util.MessageManager;
 import org.bukkit.Bukkit;
@@ -16,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,10 +48,13 @@ public class CraftCommand implements CommandExecutor {
     private final AchievementManager achievementManager;
     private final EconomyManager economyManager;
     private final RecipeManager recipeManager;
+    private final RentalManager rentalManager;
+    private final BlackMarketManager blackMarketManager;
 
     public CraftCommand(PhoenixCraft plugin, CraftingGUIManager gui, MessageManager messages,
                          StatsManager statsManager, AchievementManager achievementManager,
-                         EconomyManager economyManager, RecipeManager recipeManager) {
+                         EconomyManager economyManager, RecipeManager recipeManager,
+                         RentalManager rentalManager, BlackMarketManager blackMarketManager) {
         this.plugin = plugin;
         this.gui = gui;
         this.messages = messages;
@@ -56,6 +62,8 @@ public class CraftCommand implements CommandExecutor {
         this.achievementManager = achievementManager;
         this.economyManager = economyManager;
         this.recipeManager = recipeManager;
+        this.rentalManager = rentalManager;
+        this.blackMarketManager = blackMarketManager;
     }
 
     @Override
@@ -83,6 +91,9 @@ public class CraftCommand implements CommandExecutor {
             case "achievements", "achievement", "ach", "başarım" -> handleAchievements(player);
             case "search", "ara" -> handleSearch(player, args);
             case "recipes", "recipe", "tarifler" -> handleRecipes(player);
+            case "craftbook", "kitap" -> handleCraftBook(player, args);
+            case "rent", "kiralık" -> handleRent(player, args);
+            case "blackmarket", "karaborsa" -> handleBlackMarket(player, args);
             case "sell", "sat" -> handleSell(player, args);
             case "giverecipe", "givetarif" -> handleGiveRecipe(player, args);
             case "reload", "rl" -> handleReload(player);
@@ -139,8 +150,327 @@ public class CraftCommand implements CommandExecutor {
     }
 
     /**
-     * Faz 0.5.0: /pcraft sell <all|hand> — sell crafted items.
-     * Sells items that match a recipe's result (by material + custom-model-data).
+     * Faz 0.7.0: /pcraft craftbook <recipe-id> — craft a recipe book.
+     * Checks materials, level, and require-learned from config.
+     */
+    private void handleCraftBook(Player player, String[] args) {
+        if (!plugin.getConfig().getBoolean("recipe-book-crafting.enabled", false)) {
+            player.sendMessage(messages.getMessage("craftbook-disabled", true));
+            return;
+        }
+
+        if (args.length < 2) {
+            player.sendMessage(messages.getMessage("craftbook-usage", true));
+            return;
+        }
+
+        String recipeId = args[1].toLowerCase();
+
+        // Check recipe exists in PhoenixFish
+        if (plugin.getFishApi().getCraftingRecipe(recipeId) == null) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe%", recipeId);
+            player.sendMessage(messages.getMessage("craftbook-recipe-not-found", true, ph));
+            return;
+        }
+
+        // Check book recipe exists in config
+        String path = "recipe-book-crafting.recipes." + recipeId;
+        if (!plugin.getConfig().contains(path)) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe%", recipeId);
+            player.sendMessage(messages.getMessage("craftbook-no-recipe-defined", true, ph));
+            return;
+        }
+
+        // Check crafting level
+        int requiredLevel = plugin.getConfig().getInt("recipe-book-crafting.crafting-level-requirement", 0);
+        int playerLevel = plugin.getFishApi().getCraftingLevel(player.getUniqueId());
+        if (requiredLevel > 0 && playerLevel < requiredLevel) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%required%", String.valueOf(requiredLevel));
+            ph.put("%current%", String.valueOf(playerLevel));
+            player.sendMessage(messages.getMessage("craftbook-low-level", true, ph));
+            return;
+        }
+
+        // Check require-learned
+        boolean requireLearned = plugin.getConfig().getBoolean(path + ".require-learned", false);
+        if (requireLearned && recipeManager != null && recipeManager.isEnabled()
+                && !recipeManager.hasLearned(player.getUniqueId(), recipeId)) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe%", recipeId);
+            player.sendMessage(messages.getMessage("craftbook-require-learned", true, ph));
+            return;
+        }
+
+        // Check materials
+        List<Map<String, Object>> materials = (List<Map<String, Object>>)
+                plugin.getConfig().getList(path + ".materials");
+        if (materials == null || materials.isEmpty()) {
+            // No materials defined — give the book for free
+            giveRecipeBook(player, recipeId);
+            return;
+        }
+
+        // Check each material
+        for (Map<String, Object> matEntry : materials) {
+            String matName = (String) matEntry.get("material");
+            int needed = matEntry.get("amount") instanceof Number
+                    ? ((Number) matEntry.get("amount")).intValue() : 1;
+
+            org.bukkit.Material mat = org.bukkit.Material.matchMaterial(matName.toUpperCase());
+            if (mat == null) continue;
+
+            int owned = 0;
+            for (org.bukkit.inventory.ItemStack inv : player.getInventory().getContents()) {
+                if (inv != null && inv.getType() == mat) {
+                    owned += inv.getAmount();
+                }
+            }
+
+            if (owned < needed) {
+                player.sendMessage(messages.getMessage("craftbook-missing-materials", true));
+                return;
+            }
+        }
+
+        // Consume materials
+        for (Map<String, Object> matEntry : materials) {
+            String matName = (String) matEntry.get("material");
+            int needed = matEntry.get("amount") instanceof Number
+                    ? ((Number) matEntry.get("amount")).intValue() : 1;
+
+            org.bukkit.Material mat = org.bukkit.Material.matchMaterial(matName.toUpperCase());
+            if (mat == null) continue;
+
+            int remaining = needed;
+            org.bukkit.inventory.ItemStack[] contents = player.getInventory().getContents();
+            for (int i = 0; i < contents.length && remaining > 0; i++) {
+                org.bukkit.inventory.ItemStack inv = contents[i];
+                if (inv == null || inv.getType() != mat) continue;
+                int take = Math.min(inv.getAmount(), remaining);
+                if (take >= inv.getAmount()) {
+                    player.getInventory().setItem(i, null);
+                } else {
+                    inv.setAmount(inv.getAmount() - take);
+                    player.getInventory().setItem(i, inv);
+                }
+                remaining -= take;
+            }
+        }
+
+        // Give the recipe book
+        giveRecipeBook(player, recipeId);
+    }
+
+    private void giveRecipeBook(Player player, String recipeId) {
+        if (recipeManager == null) return;
+        org.bukkit.inventory.ItemStack book = recipeManager.createRecipeBook(recipeId);
+        if (book == null) return;
+
+        Map<Integer, org.bukkit.inventory.ItemStack> overflow = player.getInventory().addItem(book);
+        for (org.bukkit.inventory.ItemStack leftover : overflow.values()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+        }
+
+        Map<String, String> ph = new HashMap<>();
+        ph.put("%recipe%", recipeId);
+        player.sendMessage(messages.getMessage("craftbook-success", true, ph));
+        try {
+            player.playSound(player, org.bukkit.Sound.BLOCK_ANVIL_USE, 0.7f, 1.2f);
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * Faz 1.0.0: /pcraft rent — full recipe rental system.
+     * Subcommands: offer, accept, list, cancel
+     */
+    private void handleRent(Player player, String[] args) {
+        if (rentalManager == null || !rentalManager.isEnabled()) {
+            player.sendMessage(messages.getMessage("rental-disabled", true));
+            return;
+        }
+
+        if (args.length < 2) {
+            player.sendMessage(messages.getMessage("rental-usage", true));
+            return;
+        }
+
+        switch (args[1].toLowerCase()) {
+            case "offer" -> handleRentOffer(player, args);
+            case "accept" -> handleRentAccept(player, args);
+            case "list" -> handleRentList(player);
+            case "cancel" -> handleRentCancel(player, args);
+            default -> player.sendMessage(messages.getMessage("rental-usage", true));
+        }
+    }
+
+    private void handleRentOffer(Player player, String[] args) {
+        if (args.length < 5) {
+            player.sendMessage(messages.getMessage("rental-offer-usage", true));
+            return;
+        }
+
+        String recipeId = args[2].toLowerCase();
+        double price;
+        int minutes;
+        try {
+            price = Double.parseDouble(args[3]);
+            minutes = Integer.parseInt(args[4]);
+        } catch (NumberFormatException e) {
+            player.sendMessage(messages.getMessage("rental-offer-usage", true));
+            return;
+        }
+
+        // Check if player has learned the recipe
+        if (recipeManager != null && recipeManager.isEnabled()
+                && !recipeManager.hasLearned(player.getUniqueId(), recipeId)) {
+            player.sendMessage(messages.getMessage("rental-offer-not-learned", true));
+            return;
+        }
+
+        String error = rentalManager.createOffer(player, recipeId, price, minutes);
+        if (error != null) {
+            // Send the error message with appropriate placeholders
+            sendRentalError(player, error, recipeId, price, minutes);
+        } else {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe%", recipeId);
+            ph.put("%price%", String.format("%.2f", price));
+            ph.put("%minutes%", String.valueOf(minutes));
+            player.sendMessage(messages.getMessage("rental-offer-success", true, ph));
+        }
+    }
+
+    private void handleRentAccept(Player player, String[] args) {
+        if (args.length < 4) {
+            player.sendMessage(messages.getMessage("rental-accept-usage", true));
+            return;
+        }
+
+        String ownerName = args[2];
+        String recipeId = args[3].toLowerCase();
+
+        Player owner = Bukkit.getPlayerExact(ownerName);
+        if (owner == null) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%player%", ownerName);
+            player.sendMessage(messages.getMessage("rental-accept-not-found", true, ph));
+            return;
+        }
+
+        String error = rentalManager.acceptOffer(player, owner.getUniqueId(), recipeId);
+        if (error != null) {
+            sendRentalError(player, error, recipeId, 0, 0);
+        } else {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe%", recipeId);
+            ph.put("%owner%", ownerName);
+            // Find the offer to get price and duration
+            for (var offer : rentalManager.getAllOffers()) {
+                if (offer.ownerUuid.equals(owner.getUniqueId())
+                        && offer.recipeId.equalsIgnoreCase(recipeId)) {
+                    ph.put("%price%", String.format("%.2f", offer.price));
+                    ph.put("%minutes%", String.valueOf(offer.durationMinutes));
+                    break;
+                }
+            }
+            player.sendMessage(messages.getMessage("rental-accept-success", true, ph));
+        }
+    }
+
+    private void handleRentList(Player player) {
+        var offers = rentalManager.getAllOffers();
+        if (offers.isEmpty()) {
+            player.sendMessage(messages.getMessage("rental-list-empty", true));
+            return;
+        }
+
+        player.sendMessage(messages.getMessage("rental-list-header", false));
+        for (var offer : offers) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%player%", offer.ownerName);
+            ph.put("%recipe%", offer.recipeId);
+            ph.put("%price%", String.format("%.2f", offer.price));
+            ph.put("%minutes%", String.valueOf(offer.durationMinutes));
+            player.sendMessage(messages.getMessage("rental-list-line", false, ph));
+        }
+    }
+
+    private void handleRentCancel(Player player, String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(messages.getMessage("rental-cancel-usage", true));
+            return;
+        }
+
+        String recipeId = args[2].toLowerCase();
+        String error = rentalManager.cancelOffer(player, recipeId);
+        if (error != null) {
+            sendRentalError(player, error, recipeId, 0, 0);
+        } else {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe%", recipeId);
+            player.sendMessage(messages.getMessage("rental-cancel-success", true, ph));
+        }
+    }
+
+    private void sendRentalError(Player player, String errorKey,
+                                   String recipe, double price, int minutes) {
+        Map<String, String> ph = new HashMap<>();
+        ph.put("%recipe%", recipe);
+        ph.put("%price%", String.format("%.2f", price));
+        ph.put("%minutes%", String.valueOf(minutes));
+        ph.put("%player%", player.getName());
+        ph.put("%balance%", String.format("%.2f", plugin.getFishApi().getBalance(player.getUniqueId())));
+
+        // Set %min% and %max% based on error type
+        if (errorKey.contains("duration")) {
+            ph.put("%min%", String.valueOf(plugin.getConfig().getInt("recipe-rental.min-duration-minutes", 5)));
+            ph.put("%max%", String.valueOf(plugin.getConfig().getInt("recipe-rental.max-duration-minutes", 60)));
+        } else if (errorKey.contains("price")) {
+            ph.put("%min%", String.format("%.2f", plugin.getConfig().getDouble("recipe-rental.min-price", 10)));
+            double maxP = plugin.getConfig().getDouble("recipe-rental.max-price", 0);
+            ph.put("%max%", maxP > 0 ? String.format("%.2f", maxP) : "∞");
+        } else if (errorKey.contains("too-many")) {
+            ph.put("%max%", String.valueOf(plugin.getConfig().getInt("recipe-rental.max-offers-per-player", 10)));
+        } else if (errorKey.contains("accept-too-many")) {
+            ph.put("%max%", String.valueOf(plugin.getConfig().getInt("recipe-rental.max-active-rentals-per-player", 5)));
+        }
+
+        player.sendMessage(messages.getMessage(errorKey, true, ph));
+    }
+
+    /**
+     * Faz 1.0.0: /pcraft blackmarket — open the black market GUI.
+     */
+    private void handleBlackMarket(Player player, String[] args) {
+        if (blackMarketManager == null || !blackMarketManager.isEnabled()) {
+            player.sendMessage(messages.getMessage("blackmarket-refresh-disabled", true));
+            return;
+        }
+
+        // Admin subcommand: refresh
+        if (args.length >= 2 && "refresh".equalsIgnoreCase(args[1])) {
+            if (!player.hasPermission("phoenixcraft.admin")) {
+                player.sendMessage(messages.getMessage("blackmarket-no-permission", true));
+                return;
+            }
+            blackMarketManager.refreshStock(true);
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%count%", String.valueOf(blackMarketManager.getStock().size()));
+            player.sendMessage(messages.getMessage("blackmarket-refreshed", true, ph));
+            return;
+        }
+
+        // Open the GUI
+        gui.openBlackMarketMenu(player);
+    }
+
+    /**
+     * Faz 1.0.0: /pcraft sell <all|hand> — sell crafted items.
+     * Scans inventory for items matching recipe results and sells them.
      */
     private void handleSell(Player player, String[] args) {
         if (args.length < 2) {
@@ -148,10 +478,90 @@ public class CraftCommand implements CommandExecutor {
             return;
         }
 
-        // For now, this is a stub — actual sell logic would scan the inventory
-        // for items matching recipe results and sell them via PhoenixFish economy.
-        // This is a simplified placeholder.
-        player.sendMessage(messages.getMessage("sell-no-items", true));
+        var fishApi = plugin.getFishApi();
+        var allRecipes = fishApi.getCraftingRecipes();
+
+        switch (args[1].toLowerCase()) {
+            case "all" -> {
+                double totalPrice = 0;
+                int totalSold = 0;
+
+                ItemStack[] contents = player.getInventory().getContents();
+                for (int i = 0; i < contents.length; i++) {
+                    ItemStack item = contents[i];
+                    if (item == null || item.getType().isAir()) continue;
+
+                    // Check if this item matches any recipe result
+                    for (var recipe : allRecipes) {
+                        var result = recipe.resultItem();
+                        if (item.getType() == result.getType()
+                                && getCmd(item) == getCmd(result)) {
+                            // Calculate price: use a base price formula
+                            // price = recipe.xpReward * 2 * item.getAmount()
+                            double itemPrice = recipe.xpReward() * 2.0 * item.getAmount();
+                            totalPrice += itemPrice;
+                            totalSold += item.getAmount();
+                            player.getInventory().setItem(i, null);
+                            break;
+                        }
+                    }
+                }
+
+                if (totalSold == 0) {
+                    player.sendMessage(messages.getMessage("sell-no-items", true));
+                    return;
+                }
+
+                // Deposit money
+                fishApi.depositPlayer(player.getUniqueId(), totalPrice);
+
+                Map<String, String> ph = new HashMap<>();
+                ph.put("%count%", String.valueOf(totalSold));
+                ph.put("%price%", String.format("%.2f", totalPrice));
+                player.sendMessage(messages.getMessage("sell-success", true, ph));
+            }
+            case "hand" -> {
+                ItemStack item = player.getInventory().getItemInMainHand();
+                if (item == null || item.getType().isAir()) {
+                    player.sendMessage(messages.getMessage("sell-no-items", true));
+                    return;
+                }
+
+                // Find matching recipe
+                for (var recipe : allRecipes) {
+                    var result = recipe.resultItem();
+                    if (item.getType() == result.getType()
+                            && getCmd(item) == getCmd(result)) {
+                        double price = recipe.xpReward() * 2.0 * item.getAmount();
+                        int amount = item.getAmount();
+                        player.getInventory().setItemInMainHand(null);
+                        fishApi.depositPlayer(player.getUniqueId(), price);
+
+                        Map<String, String> ph = new HashMap<>();
+                        ph.put("%count%", String.valueOf(amount));
+                        ph.put("%price%", String.format("%.2f", price));
+                        player.sendMessage(messages.getMessage("sell-success", true, ph));
+                        return;
+                    }
+                }
+
+                player.sendMessage(messages.getMessage("sell-no-items", true));
+            }
+            default -> player.sendMessage(messages.getMessage("sell-usage", true));
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private int getCmd(org.bukkit.inventory.ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return 0;
+        var meta = item.getItemMeta();
+        if (meta == null || !meta.hasCustomModelData()) return 0;
+        try {
+            Integer cmd = meta.getCustomModelData();
+            return cmd != null ? cmd : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     /**
@@ -264,6 +674,15 @@ public class CraftCommand implements CommandExecutor {
         }
         if (recipeManager != null && recipeManager.isEnabled()) {
             player.sendMessage(messages.getMessage("command-help-recipes", false));
+        }
+        if (plugin.getConfig().getBoolean("recipe-book-crafting.enabled", false)) {
+            player.sendMessage(messages.getMessage("command-help-craftbook", false));
+        }
+        if (plugin.getConfig().getBoolean("recipe-rental.enabled", false)) {
+            player.sendMessage(messages.getMessage("command-help-rent", false));
+        }
+        if (blackMarketManager != null && blackMarketManager.isEnabled()) {
+            player.sendMessage(messages.getMessage("command-help-blackmarket", false));
         }
         player.sendMessage(messages.getMessage("command-help-sell", false));
         if (player.hasPermission("phoenixcraft.admin")) {

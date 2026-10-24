@@ -91,13 +91,33 @@ public class MessageManager {
 
     /**
      * Replace placeholders in a message string. Values are MiniMessage-escaped
-     * to prevent injection.
+     * to prevent injection from player input (e.g. search queries, player names).
+     *
+     * Use {@link #replacePlaceholdersUnsafe} for internal data that may contain
+     * valid MiniMessage tags (e.g. tier colors, recipe display names from config).
      */
     private String replacePlaceholders(String message, Map<String, String> placeholders) {
+        return replacePlaceholdersUnsafe(message, placeholders, true);
+    }
+
+    /**
+     * Replace placeholders WITHOUT escaping MiniMessage tags.
+     * Use this for internal data (tier colors, config-defined names) that
+     * should preserve their MiniMessage formatting.
+     */
+    private String replacePlaceholdersUnsafe(String message, Map<String, String> placeholders) {
+        return replacePlaceholdersUnsafe(message, placeholders, false);
+    }
+
+    private String replacePlaceholdersUnsafe(String message, Map<String, String> placeholders,
+                                               boolean escape) {
         if (placeholders != null && !placeholders.isEmpty()) {
             for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-                String safeValue = miniMessage.escapeTags(entry.getValue());
-                message = message.replace(entry.getKey(), safeValue);
+                String value = entry.getValue();
+                if (escape) {
+                    value = miniMessage.escapeTags(value);
+                }
+                message = message.replace(entry.getKey(), value);
             }
         }
         return message;
@@ -105,12 +125,35 @@ public class MessageManager {
 
     /**
      * Get a message as a Component, with prefix and placeholders.
+     * Placeholder values are ESCAPED (safe for player input).
      *
      * @param key           message key (e.g. "craft-success-single")
      * @param addPrefix     whether to prepend the prefix
      * @param placeholders  placeholder map (e.g. %item% → "Hardwood Rod")
      */
     public Component getMessage(String key, boolean addPrefix, Map<String, String> placeholders) {
+        return getMessageRaw(key, addPrefix, placeholders, true);
+    }
+
+    /**
+     * Get a message as a Component, with prefix and placeholders.
+     * Placeholder values are NOT escaped — use for internal data that
+     * may contain valid MiniMessage tags (tier colors, config names).
+     */
+    public Component getMessageRaw(String key, boolean addPrefix,
+                                     Map<String, String> placeholders) {
+        return getMessageRaw(key, addPrefix, placeholders, false);
+    }
+
+    /**
+     * Get a message as a Component, no prefix, with raw (unescaped) placeholders.
+     */
+    public Component getMessageRaw(String key, Map<String, String> placeholders) {
+        return getMessageRaw(key, false, placeholders, false);
+    }
+
+    private Component getMessageRaw(String key, boolean addPrefix,
+                                      Map<String, String> placeholders, boolean escape) {
         FileConfiguration cfg = this.langConfig;
         if (cfg == null) {
             return Component.text("Missing language configuration");
@@ -122,7 +165,7 @@ public class MessageManager {
             return Component.empty();
         }
 
-        message = replacePlaceholders(message, placeholders);
+        message = replacePlaceholdersUnsafe(message, placeholders, escape);
 
         if (addPrefix && prefix != null && !prefix.isEmpty()) {
             message = prefix + message;

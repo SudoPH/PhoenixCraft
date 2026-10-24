@@ -9,12 +9,14 @@ import com.phoenix.craft.economy.EconomyManager;
 import com.phoenix.craft.gui.CraftingGUIManager;
 import com.phoenix.craft.listener.CraftingListener;
 import com.phoenix.craft.recipes.RecipeManager;
+import com.phoenix.craft.rental.RentalManager;
 import com.phoenix.craft.stats.StatsManager;
 import com.phoenix.craft.util.MessageManager;
 import com.phoenix.fish.api.PhoenixFishAPI;
 import com.phoenix.fish.event.PhoenixFishReloadEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -53,6 +55,7 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
     private RecipeManager recipeManager;
     private DiscoveryManager discoveryManager;
     private BlackMarketManager blackMarketManager;
+    private RentalManager rentalManager;
 
     @Override
     public void onEnable() {
@@ -98,6 +101,7 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         // 6. Init Discovery + BlackMarket managers (Faz 0.6.0)
         this.discoveryManager = new DiscoveryManager(this, messageManager);
         this.blackMarketManager = new BlackMarketManager(this, fishApi);
+        this.rentalManager = new RentalManager(this, fishApi, messageManager);
 
         // 7. Init GUI manager
         this.guiManager = new CraftingGUIManager(this, fishApi, messageManager,
@@ -114,7 +118,8 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         PluginCommand cmd = getCommand("pcraft");
         if (cmd != null) {
             CraftCommand executor = new CraftCommand(this, guiManager, messageManager,
-                    statsManager, achievementManager, economyManager, recipeManager);
+                    statsManager, achievementManager, economyManager, recipeManager,
+                    rentalManager, blackMarketManager);
             cmd.setExecutor(executor);
             cmd.setTabCompleter(new CraftTabCompleter());
         } else {
@@ -150,6 +155,9 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         if (blackMarketManager != null) {
             blackMarketManager.shutdown();
         }
+        if (rentalManager != null) {
+            rentalManager.shutdown();
+        }
 
         // Close any open crafting GUIs before we go
         if (guiManager != null) {
@@ -172,8 +180,21 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
 
         long intervalTicks = intervalSec * 20L;
         Bukkit.getScheduler().runTaskTimer(this, () -> {
+            // Faz 0.9.0: save all dirty managers in one pass
             if (statsManager != null) {
                 statsManager.save();
+            }
+            if (achievementManager != null) {
+                achievementManager.saveUnlocks();
+            }
+            if (recipeManager != null) {
+                recipeManager.save();
+            }
+            if (discoveryManager != null) {
+                discoveryManager.save();
+            }
+            if (rentalManager != null) {
+                rentalManager.save();
             }
         }, intervalTicks, intervalTicks);
     }
@@ -187,6 +208,10 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         if (guiManager == null) return;
         getLogger().info("PhoenixFish reload detected (took " + event.getDurationMs()
                 + "ms) — closing all open crafting GUIs.");
+        // Faz 0.9.0: clear all pending search states (stale after reload)
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            guiManager.getPlayerState().clearSearchInput(p.getUniqueId());
+        }
         guiManager.closeAllGUIs();
     }
 
@@ -248,6 +273,10 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
 
     public BlackMarketManager getBlackMarketManager() {
         return blackMarketManager;
+    }
+
+    public RentalManager getRentalManager() {
+        return rentalManager;
     }
 
     /**

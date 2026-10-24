@@ -1,0 +1,99 @@
+# ============================================================
+# PhoenixCraft — Custom Achievements
+# ============================================================
+# This file is for SERVER ADMINS to add their own custom achievements
+# WITHOUT touching the main config.yml.
+#
+# Achievements defined here are MERGED with the ones in config.yml.
+# If an achievement ID exists in BOTH files, the one in this file
+# takes priority (overrides the config.yml one).
+#
+# HOW TO ADD A CUSTOM ACHIEVEMENT:
+# ============================================================
+# 1. Copy the template below and paste it under "list:"
+# 2. Change the ID (e.g. "my-achievement" to your own unique name)
+# 3. Set the type, target, tier, and rewards
+# 4. Add the name and description to messages_en.yml / messages_tr.yml:
+#      achievement-my-achievement-name: "My Achievement Name"
+#      achievement-my-achievement-desc: "Do something cool."
+# 5. Run /pcraft reload
+#
+# ACHIEVEMENT TYPES:
+#   FIRST_CRAFT       — unlocked on the player's first craft ever (no target)
+#   TOTAL_CRAFTS      — target = integer (total crafts needed)
+#   UNIQUE_RECIPES    — target = integer (distinct recipes crafted)
+#   BULK_CRAFT        — target = integer (single bulk craft of N+ items)
+#   RECIPE_CRAFTED    — target = recipe id (craft this recipe once)
+#   PER_RECIPE_COUNT  — target = "recipe_id:count" (craft one recipe N times)
+#   CATEGORY_CRAFTS   — target = "category:count" (e.g. "rod:50")
+#   TOTAL_XP_EARNED   — target = integer (total XP from crafting)
+#   FIRST_DISCOVERY   — target = integer (discover N different recipes)
+#
+# TIERS:
+#   bronze, silver, gold, diamond, or none
+#   (purely visual — changes the prefix shown in the achievements GUI)
+#
+# REWARDS:
+#   reward-commands — console commands run on unlock (use %player% placeholder)
+#   reward-items    — physical items given to the player on unlock
+# ============================================================
+
+list:
+  # ───────────────────────────────────────────────────────
+  # TEMPLATE — copy this and rename the ID
+  # ───────────────────────────────────────────────────────
+  # my-custom-achievement:
+  #   name: "achievement-my-custom-name"          # key in messages_*.yml
+  #   description: "achievement-my-custom-desc"   # key in messages_*.yml
+  #   type: "TOTAL_CRAFTS"                         # see types above
+  #   target: "250"                                # see target format above
+  #   tier: "gold"                                 # bronze/silver/gold/diamond/none
+  #   reward-commands:
+  #     - "give %player% diamond 10"
+  #     - "say %player% unlocked a custom achievement!"
+  #   reward-items:
+  #     1:
+  #       material: ENCHANTED_GOLDEN_APPLE
+  #       amount: 2
+  #       custom-model-data: 0
+
+  # ───────────────────────────────────────────────────────
+  # EXAMPLE: Craft 250 worms
+  # ───────────────────────────────────────────────────────
+  # worm-tycoon:
+  #   name: "achievement-worm-tycoon-name"
+  #   description: "achievement-worm-tycoon-desc"
+  #   type: "PER_RECIPE_COUNT"
+  #   target: "worm:250"
+  #   tier: "diamond"
+  #   reward-commands:
+  #     - "give %player% emerald_block 1"
+  #   reward-items:
+  #     1:
+  #       material: EMERALD_BLOCK
+  #       amount: 1
+  #       custom-model-data: 0
+
+  # ───────────────────────────────────────────────────────
+  # EXAMPLE: Earn 10000 total XP
+  # ───────────────────────────────────────────────────────
+  # xp-millionaire:
+  #   name: "achievement-xp-millionaire-name"
+  #   description: "achievement-xp-millionaire-desc"
+  #   type: "TOTAL_XP_EARNED"
+  #   target: "10000"
+  #   tier: "diamond"
+  #   reward-commands:
+  #     - "give %player% netherite_block 1"
+
+  # ───────────────────────────────────────────────────────
+  # EXAMPLE: Craft 100 baits
+  # ───────────────────────────────────────────────────────
+  # bait-supplier:
+  #   name: "achievement-bait-supplier-name"
+  #   description: "achievement-bait-supplier-desc"
+  #   type: "CATEGORY_CRAFTS"
+  #   target: "bait:100"
+  #   tier: "gold"
+  #   reward-commands:
+  #     - "give %player% gold_ingot 10"

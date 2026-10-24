@@ -2,7 +2,9 @@ package com.phoenix.craft.discovery;
 
 import com.phoenix.craft.PhoenixCraft;
 import com.phoenix.craft.util.MessageManager;
+import com.phoenix.craft.util.NotificationHelper;
 import com.phoenix.fish.api.CraftRecipe;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
@@ -143,33 +145,40 @@ public class DiscoveryManager {
     private void notifyDiscovery(Player player, CraftRecipe recipe, int bonusXp) {
         String recipeName = recipe.resultItem().hasItemMeta()
                 && recipe.resultItem().getItemMeta().hasDisplayName()
-                ? net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                        .plainText().serialize(recipe.resultItem().getItemMeta().displayName())
+                ? MiniMessage.miniMessage().serialize(recipe.resultItem().getItemMeta().displayName())
                 : recipe.id();
 
         Map<String, String> ph = Map.of("%recipe%", recipeName, "%xp%", String.valueOf(bonusXp));
-        player.sendMessage(messages.getMessage("discovery-first-craft", true, ph));
 
-        if (plugin.getConfig().getBoolean("discovery.show-title", true)) {
+        // 1. Chat (config-driven) — use getMessageRaw because %recipe% may contain MiniMessage tags
+        if (NotificationHelper.shouldSendDiscoveryChat(plugin)) {
+            player.sendMessage(messages.getMessageRaw("discovery-first-craft", true, ph));
+        }
+
+        // 2. Title (config-driven) — same reason
+        if (NotificationHelper.shouldShowDiscoveryTitle(plugin)) {
             try {
                 Title.Times times = Title.Times.times(
                         java.time.Duration.ofMillis(300),
                         java.time.Duration.ofMillis(3000),
                         java.time.Duration.ofMillis(800));
                 Title title = Title.title(
-                        messages.getMessage("discovery-title", ph),
-                        messages.getMessage("discovery-subtitle", ph), times);
+                        messages.getMessageRaw("discovery-title", ph),
+                        messages.getMessageRaw("discovery-subtitle", ph), times);
                 player.showTitle(title);
             } catch (Exception ignored) {
             }
         }
 
-        String soundName = plugin.getConfig().getString("discovery.discovery-sound",
-                "UI_TOAST_CHALLENGE_COMPLETE");
-        try {
-            Sound sound = Sound.valueOf(soundName.toUpperCase());
-            player.playSound(player, sound, 0.7f, 1.0f);
-        } catch (IllegalArgumentException ignored) {
+        // 3. Sound (config-driven)
+        if (NotificationHelper.shouldPlayDiscoverySound(plugin)) {
+            String soundName = plugin.getConfig().getString("discovery.discovery-sound",
+                    "UI_TOAST_CHALLENGE_COMPLETE");
+            try {
+                Sound sound = Sound.valueOf(soundName.toUpperCase());
+                player.playSound(player, sound, 0.7f, 1.0f);
+            } catch (IllegalArgumentException ignored) {
+            }
         }
     }
 }

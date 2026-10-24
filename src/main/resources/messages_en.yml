@@ -78,8 +78,8 @@ detail-back-name: "<yellow>« Back"
 detail-back-lore: "<dark_gray>Return to category menu."
 
 # ----- Craft Results -----
-craft-success-single: "<green>✔ Crafted: <white>%item%</white> <dark_gray>(+%xp% Crafting XP)</green>"
-craft-success-bulk: "<green>✔ <white>%count%x</white> crafted: <white>%item%</white> <dark_gray>(+%xp% Crafting XP)</green>"
+craft-success-single: "<green>✔ <white>%item%</white> <dark_gray>(+%xp% XP)</green>"
+craft-success-bulk: "<green>✔ <white>%count%x</white> <dark_gray>%item% <dark_gray>(+%xp% XP)</green>"
 craft-fail-materials: "<red>✖ You don't have all the required materials!</red>"
 craft-fail-level: "<red>✖ Insufficient level! Required: <yellow>%required%</yellow> | Yours: %current%</red>"
 craft-recipe-unknown: "<red>✖ Unknown recipe.</red>"
@@ -206,6 +206,27 @@ achievement-cosmic-crafter-desc: "Craft the legendary Cosmic Rod."
 
 achievement-lunar-moth-name: "Master Bait Maker"
 achievement-lunar-moth-desc: "Craft the mythical Lunar Moth bait."
+
+# Faz 0.7.0: new achievement names & descriptions
+achievement-worm-master-name: "Worm Master"
+achievement-worm-master-desc: "Craft 100 worms."
+
+achievement-rod-specialist-name: "Rod Specialist"
+achievement-rod-specialist-desc: "Craft 50 rods in total."
+
+achievement-xp-hoarder-name: "XP Hoarder"
+achievement-xp-hoarder-desc: "Earn 5000 total XP from crafting."
+
+achievement-discovery-master-name: "Discovery Master"
+achievement-discovery-master-desc: "Discover 10 different recipes."
+
+# Faz 0.7.0: progress + tier display
+achievement-progress: "<gray>Progress: <yellow>%current%<dark_gray>/<white>%target%"
+achievement-tier-bronze: "<#CD7F32>[BRONZE]"
+achievement-tier-silver: "<#C0C0C0>[SILVER]"
+achievement-tier-gold: "<gold>[GOLD]"
+achievement-tier-diamond: "<aqua>[DIAMOND]"
+achievement-tier-none: ""
 
 # ----- Main Menu — New Buttons (Stats & Achievements) -----
 main-menu-stats-name: "<aqua>STATS"

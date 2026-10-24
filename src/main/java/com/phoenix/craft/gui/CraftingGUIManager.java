@@ -8,6 +8,7 @@ import com.phoenix.craft.economy.EconomyManager;
 import com.phoenix.craft.recipes.RecipeManager;
 import com.phoenix.craft.stats.StatsManager;
 import com.phoenix.craft.util.MessageManager;
+import com.phoenix.craft.util.NotificationHelper;
 import com.phoenix.fish.api.CraftBulkResult;
 import com.phoenix.fish.api.CraftRecipe;
 import com.phoenix.fish.api.CraftResult;
@@ -533,7 +534,7 @@ public class CraftingGUIManager {
             ph.put("%name%", describeItem(ing.item()));
             ph.put("%owned%", String.valueOf(owned));
             ph.put("%needed%", String.valueOf(needed));
-            lore.add(messages.getMessage("recipe-ingredient-line", ph));
+            lore.add(messages.getMessageRaw("recipe-ingredient-line", ph));
         }
 
         lore.add(Component.empty());
@@ -543,7 +544,7 @@ public class CraftingGUIManager {
         levelPh.put("%color%", levelOk ? "<green>" : "<red>");
         levelPh.put("%required%", String.valueOf(recipe.craftingLevelRequirement()));
         levelPh.put("%current%", String.valueOf(playerLevel));
-        lore.add(messages.getMessage("recipe-level-line", levelPh));
+        lore.add(messages.getMessageRaw("recipe-level-line", levelPh));
 
         Map<String, String> xpPh = new HashMap<>();
         xpPh.put("%xp%", String.valueOf(recipe.xpReward()));
@@ -690,7 +691,7 @@ public class CraftingGUIManager {
             ph.put("%name%", describeItem(ing.item()));
             ph.put("%needed%", String.valueOf(ing.amount()));
             ph.put("%owned%", String.valueOf(owned));
-            ingLore.add(messages.getMessage("detail-ingredient-line", ph));
+            ingLore.add(messages.getMessageRaw("detail-ingredient-line", ph));
         }
         ingLore.add(Component.empty());
 
@@ -700,7 +701,7 @@ public class CraftingGUIManager {
         levelPh.put("%color%", levelOk ? "<green>" : "<red>");
         levelPh.put("%required%", String.valueOf(recipe.craftingLevelRequirement()));
         levelPh.put("%current%", String.valueOf(playerLevel));
-        ingLore.add(messages.getMessage("detail-level-line", levelPh));
+        ingLore.add(messages.getMessageRaw("detail-level-line", levelPh));
 
         Map<String, String> xpPh = new HashMap<>();
         xpPh.put("%xp%", String.valueOf(recipe.xpReward()));
@@ -829,7 +830,9 @@ public class CraftingGUIManager {
                 Map<String, String> ph = new HashMap<>();
                 ph.put("%item%", describeItem(recipe.resultItem()));
                 ph.put("%xp%", String.valueOf(recipe.xpReward()));
-                player.sendMessage(messages.getMessage("craft-success-single", true, ph));
+                if (NotificationHelper.shouldSendCraftSuccessChat(plugin)) {
+                    player.sendMessage(messages.getMessageRaw("craft-success-single", true, ph));
+                }
 
                 playCraftSound(player, recipe);
                 spawnSuccessParticles(player, 1);
@@ -904,7 +907,9 @@ public class CraftingGUIManager {
                 ph.put("%count%", String.valueOf(bulkResult.craftedCount()));
                 ph.put("%item%", describeItem(recipe.resultItem()));
                 ph.put("%xp%", String.valueOf(bulkResult.xpAwarded()));
-                player.sendMessage(messages.getMessage("craft-success-bulk", true, ph));
+                if (NotificationHelper.shouldSendCraftSuccessChat(plugin)) {
+                    player.sendMessage(messages.getMessageRaw("craft-success-bulk", true, ph));
+                }
 
                 playCraftSound(player, recipe);
                 spawnSuccessParticles(player, bulkResult.craftedCount());
@@ -950,17 +955,166 @@ public class CraftingGUIManager {
         if (statsManager != null && statsManager.isEnabled()) {
             statsManager.recordCraft(player, recipe, craftedCount, xpAwarded);
         }
-        // Faz 0.6.0: Discovery bonus XP check
+        // Faz 0.6.0: Discovery bonus XP check — award silently, notification
+        // is handled by DiscoveryManager itself (title + chat)
         if (discoveryManager != null && discoveryManager.isEnabled()) {
             int bonusXp = discoveryManager.checkDiscovery(player, recipe, craftedCount);
             if (bonusXp > 0) {
-                // Award the bonus XP via PhoenixFish API
                 fishApi.addCraftingXp(player, bonusXp);
             }
         }
         if (achievementManager != null && achievementManager.isEnabled()) {
             achievementManager.checkAchievements(player, recipe, craftedCount);
         }
+    }
+
+    // =====================================================================
+    //  BLACK MARKET MENU — Faz 1.0.0
+    // =====================================================================
+
+    public void openBlackMarketMenu(Player player) {
+        if (blackMarketManager == null || !blackMarketManager.isEnabled()) {
+            player.sendMessage(messages.getMessage("blackmarket-refresh-disabled", true));
+            return;
+        }
+
+        var stock = blackMarketManager.getStock();
+        long untilRefresh = blackMarketManager.getTimeUntilRefresh();
+        String timeStr = formatBlackMarketTime(untilRefresh);
+
+        Map<String, String> titlePh = new HashMap<>();
+        titlePh.put("%time%", timeStr);
+
+        Inventory inv = Bukkit.createInventory(
+                new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),
+                54,
+                messages.getMessage("blackmarket-title", titlePh));
+
+        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
+        fillBorders(inv, 54, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+
+        int slot = 0;
+        for (Map.Entry<String, Double> entry : stock.entrySet()) {
+            String recipeId = entry.getKey();
+            double price = entry.getValue();
+
+            com.phoenix.fish.api.CraftRecipe recipe = fishApi.getCraftingRecipe(recipeId);
+            if (recipe == null) continue;
+
+            ItemStack icon = recipe.resultItem().clone();
+            ItemMeta meta = icon.getItemMeta();
+            if (meta == null) continue;
+
+            // Set display name with dark_red color
+            String recipeName = describeItem(recipe.resultItem());
+            Map<String, String> namePh = new HashMap<>();
+            namePh.put("%recipe%", recipeName);
+            meta.displayName(messages.getMessageRaw("blackmarket-item-name", namePh));
+
+            // Lore
+            Map<String, String> pricePh = new HashMap<>();
+            pricePh.put("%price%", String.format("%.2f", price));
+            List<Component> lore = new ArrayList<>();
+            lore.add(messages.getMessage("blackmarket-item-lore-1", pricePh));
+            lore.add(messages.getMessage("blackmarket-item-lore-2"));
+            lore.add(messages.getMessage("blackmarket-item-lore-3"));
+            meta.lore(lore);
+
+            // PDC: action = "blackmarket_purchase", value = recipeId + ":" + price
+            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "blackmarket_purchase");
+            meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING,
+                    recipeId + ":" + String.format("%.2f", price));
+
+            icon.setItemMeta(meta);
+            inv.setItem(slot, icon);
+            slot++;
+            if (slot >= 45) break;
+        }
+
+        // Slot 49: back to main menu
+        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
+        inv.setItem(49, createButton(parseMaterial(backMat, Material.ARROW),
+                "category-back-to-main", List.of(),
+                "main", "none"));
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Handle a black market purchase click.
+     */
+    public void handleBlackMarketPurchase(Player player, String recipeId, double price) {
+        if (blackMarketManager == null || !blackMarketManager.isEnabled()) return;
+
+        // Check if still in stock
+        if (!blackMarketManager.isInStock(recipeId)) {
+            player.sendMessage(messages.getMessage("blackmarket-purchase-sold-out", true));
+            return;
+        }
+
+        // Check if already bought this cycle
+        if (!blackMarketManager.canPurchase(player.getUniqueId())) {
+            player.sendMessage(messages.getMessage("blackmarket-purchase-already-bought", true));
+            return;
+        }
+
+        // Check if already learned
+        if (recipeManager != null && recipeManager.isEnabled()
+                && recipeManager.hasLearned(player.getUniqueId(), recipeId)) {
+            player.sendMessage(messages.getMessage("blackmarket-purchase-already-learned", true));
+            return;
+        }
+
+        // Check balance
+        double balance = fishApi.getBalance(player.getUniqueId());
+        if (balance < price) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%price%", String.format("%.2f", price));
+            ph.put("%balance%", String.format("%.2f", balance));
+            player.sendMessage(messages.getMessage("blackmarket-purchase-insufficient-funds", true, ph));
+            return;
+        }
+
+        // Charge
+        fishApi.withdrawPlayer(player.getUniqueId(), price);
+
+        // Give recipe book
+        if (recipeManager != null) {
+            ItemStack book = recipeManager.createRecipeBook(recipeId);
+            if (book != null) {
+                Map<Integer, ItemStack> overflow = player.getInventory().addItem(book);
+                for (ItemStack leftover : overflow.values()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+                }
+            }
+        }
+
+        // Record purchase
+        blackMarketManager.recordPurchase(player.getUniqueId());
+
+        // Notify
+        Map<String, String> ph = new HashMap<>();
+        ph.put("%recipe%", recipeId);
+        ph.put("%price%", String.format("%.2f", price));
+        player.sendMessage(messages.getMessage("blackmarket-purchase-success", true, ph));
+
+        // Refresh the GUI
+        openBlackMarketMenu(player);
+    }
+
+    private String formatBlackMarketTime(long ms) {
+        if (ms <= 0) return messages.getPlainMessage("blackmarket-time-expired");
+        long minutes = ms / 60_000L;
+        long hours = minutes / 60;
+        if (hours > 0) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%count%", String.valueOf(hours));
+            ph.put("%minutes%", String.valueOf(minutes % 60));
+            return messages.getPlainMessage("blackmarket-time-hours", ph);
+        }
+        Map<String, String> ph = new HashMap<>();
+        ph.put("%count%", String.valueOf(minutes));
+        return messages.getPlainMessage("blackmarket-time-minutes", ph);
     }
 
     // =====================================================================
@@ -1319,10 +1473,18 @@ public class CraftingGUIManager {
             ItemMeta meta = item.getItemMeta();
             if (meta == null) continue;
 
+            // Faz 0.7.0: tier prefix in name — use getMessageRaw to preserve MiniMessage tags
+            String tierKey = "achievement-tier-" + ach.tier;
+            String tierPrefix = messages.getPlainMessage(tierKey);
+            String achName = messages.getPlainMessage(ach.nameKey);
+            String displayName = (tierPrefix != null && !tierPrefix.isEmpty())
+                    ? tierPrefix + " " + achName : achName;
+
             String nameKey = isUnlocked ? "achievement-unlocked-name" : "achievement-locked-name";
             Map<String, String> namePh = new HashMap<>();
-            namePh.put("%name%", messages.getPlainMessage(ach.nameKey));
-            meta.displayName(messages.getMessage(nameKey, namePh));
+            namePh.put("%name%", displayName);
+            // Use getMessageRaw — tier prefixes contain MiniMessage tags that should NOT be escaped
+            meta.displayName(messages.getMessageRaw(nameKey, namePh));
 
             Map<String, String> descPh = new HashMap<>();
             descPh.put("%description%", messages.getPlainMessage(ach.descKey));
@@ -1331,6 +1493,21 @@ public class CraftingGUIManager {
             lore.add(messages.getMessage(isUnlocked
                     ? "achievement-unlocked-lore-1"
                     : "achievement-locked-lore-1", descPh));
+
+            // Faz 0.7.0: progress line (only for locked achievements with progress)
+            if (!isUnlocked) {
+                String progressStr = achievementManager.getProgressString(player.getUniqueId(), ach);
+                if (!progressStr.equals("—")) {
+                    String[] parts = progressStr.split("/");
+                    if (parts.length == 2) {
+                        Map<String, String> progPh = new HashMap<>();
+                        progPh.put("%current%", parts[0]);
+                        progPh.put("%target%", parts[1]);
+                        lore.add(messages.getMessage("achievement-progress", progPh));
+                    }
+                }
+            }
+
             lore.add(Component.empty());
             lore.add(messages.getMessage(isUnlocked
                     ? "achievement-unlocked-lore-3"
@@ -1392,6 +1569,7 @@ public class CraftingGUIManager {
      * Falls back to sounds.craft-success.
      */
     private void playCraftSound(Player player, CraftRecipe recipe) {
+        if (!NotificationHelper.shouldPlayCraftSuccessSound(plugin)) return;
         try {
             Sound sound = pickTierSound(recipe);
             if (sound == null) {
@@ -1412,6 +1590,7 @@ public class CraftingGUIManager {
     }
 
     private void playFailSound(Player player) {
+        if (!NotificationHelper.shouldPlayCraftFailSound(plugin)) return;
         try {
             String name = plugin.getConfig().getString("sounds.craft-fail", "ENTITY_VILLAGER_NO");
             Sound sound = parseSound(name, Sound.ENTITY_VILLAGER_NO);
@@ -1583,12 +1762,18 @@ public class CraftingGUIManager {
         }
     }
 
+    /**
+     * Get the display name of an item as a MiniMessage-compatible string.
+     * If the item has a custom display name, returns it as a MiniMessage string
+     * (preserving color tags). Otherwise returns the material name.
+     */
     private String describeItem(ItemStack item) {
         if (item == null) return "???";
         if (item.hasItemMeta()) {
             ItemMeta m = item.getItemMeta();
             if (m != null && m.hasDisplayName()) {
-                return plainText(m.displayName());
+                // Convert Component back to MiniMessage string to preserve colors
+                return miniMessage.serialize(m.displayName());
             }
         }
         return item.getType().name().replace("_", " ").toLowerCase();

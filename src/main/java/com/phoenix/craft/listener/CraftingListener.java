@@ -113,6 +113,21 @@ public class CraftingListener implements Listener {
             case "open_stats" -> gui.openStatsMenu(player);
             case "open_achievements" -> gui.openAchievementsMenu(player);
             case "open_recipes" -> gui.openRecipesMenu(player);
+            case "blackmarket_purchase" -> {
+                // Faz 1.0.0: Black market purchase
+                // value format: "recipeId:price"
+                if (value != null) {
+                    String[] parts = value.split(":", 2);
+                    if (parts.length == 2) {
+                        try {
+                            String recipeId = parts[0];
+                            double price = Double.parseDouble(parts[1]);
+                            gui.handleBlackMarketPurchase(player, recipeId, price);
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
             // Faz 0.4.0: search + filter + sort
             case "search" -> {
                 // value = category (e.g. "rod" or "bait"), or "all"

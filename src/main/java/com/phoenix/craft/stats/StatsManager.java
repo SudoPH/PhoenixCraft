@@ -50,6 +50,9 @@ public class StatsManager {
     /** Dirty flag — set to true when stats change, reset after save. */
     private volatile boolean dirty = false;
 
+    /** Faz 0.9.0: cached leaderboard (invalidated on dirty) */
+    private volatile List<Map.Entry<UUID, Integer>> cachedLeaderboard = null;
+
     public StatsManager(PhoenixCraft plugin) {
         this.plugin = plugin;
         this.enabled = plugin.getConfig().getBoolean("stats.enabled", true);
@@ -158,6 +161,9 @@ public class StatsManager {
      * Record a successful craft. Called by CraftingGUIManager after each
      * successful single or bulk craft.
      *
+     * <p>Faz 0.9.0: Does NOT save to disk immediately — just sets the dirty flag.
+     * The auto-save timer (or shutdown) will persist the data.</p>
+     *
      * @param player   the crafting player
      * @param recipe   the recipe that was crafted
      * @param count    how many items were produced (1 for single, N for bulk)
@@ -181,6 +187,8 @@ public class StatsManager {
         stats.recipeCounts.merge(recipe.id(), count, Integer::sum);
 
         dirty = true;
+        cachedLeaderboard = null; // invalidate cache
+        // Faz 0.9.0: do NOT save here — auto-save timer handles it
     }
 
     // =====================================================================
@@ -201,11 +209,23 @@ public class StatsManager {
     public List<Map.Entry<UUID, Integer>> getTopCrafters(int limit) {
         if (!enabled) return Collections.emptyList();
 
+        // Faz 0.9.0: use cached leaderboard if available
+        if (cachedLeaderboard != null) {
+            if (cachedLeaderboard.size() <= limit) {
+                return cachedLeaderboard;
+            }
+            return cachedLeaderboard.subList(0, limit);
+        }
+
         List<Map.Entry<UUID, Integer>> all = new ArrayList<>();
         for (Map.Entry<UUID, PlayerStats> entry : cache.entrySet()) {
             all.add(Map.entry(entry.getKey(), entry.getValue().totalCrafts));
         }
         all.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+
+        // Cache the full sorted list
+        cachedLeaderboard = all;
+
         if (all.size() > limit) {
             return all.subList(0, limit);
         }

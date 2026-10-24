@@ -328,8 +328,8 @@ public class RecipeManager {
         if (item.hasItemMeta()) {
             ItemMeta m = item.getItemMeta();
             if (m != null && m.hasDisplayName()) {
-                return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                        .plainText().serialize(m.displayName());
+                // Return MiniMessage-serialized string to preserve color tags
+                return MiniMessage.miniMessage().serialize(m.displayName());
             }
         }
         return item.getType().name().replace("_", " ").toLowerCase();
