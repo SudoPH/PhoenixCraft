@@ -3,3 +3,8 @@ target/
 *.iml
 .vscode/
 *.jar
+target/
+.idea/
+*.iml
+.vscode/
+*.jar
