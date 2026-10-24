@@ -1,0 +1,392 @@
+# ============================================================
+# PhoenixCraft — English Language File
+# ============================================================
+# All player-facing GUI messages are stored here.
+# Use MiniMessage tags: <red>, <green>, <yellow>, <gold>, <bold>, <italic>, <dark_gray>, etc.
+# Placeholders: %recipe_id%, %item_name%, %xp%, %count%, %owned%, %needed%, %level%, %required%, %current%
+# ============================================================
+
+prefix: "<dark_gray>[<gradient:#FFA500:#FF6347>PhoenixCraft</gradient>] "
+
+# ----- Main Menu -----
+main-menu-title: "<dark_gray>» <gradient:#FFA500:#FF6347>PhoenixCraft</gradient>"
+main-menu-rods-name: "<yellow>RODS"
+main-menu-rods-lore-1: "<gray>Craft custom fishing rods."
+main-menu-rods-lore-2: "<dark_gray>Click to see the list."
+main-menu-baits-name: "<gold>BAITS"
+main-menu-baits-lore-1: "<gray>Craft baits to attract fish."
+main-menu-baits-lore-2: "<dark_gray>Click to see the list."
+main-menu-info-name: "<gold>CRAFTING INFO"
+main-menu-info-line-1: "<gray>Crafting XP: <yellow>%xp%<dark_gray>/<white>%xp_required%"
+main-menu-info-line-2: "<gray>Crafting Level: <yellow>%level%"
+main-menu-info-line-3: ""
+main-menu-info-line-4: "<dark_gray>Recipes are loaded from PhoenixFish's custom_recipes.yml."
+main-menu-close-name: "<red>CLOSE"
+
+# ----- Category Menu -----
+category-rods-title: "<dark_gray>» <yellow>RODS <dark_gray>(Page %page%/%total%)"
+category-baits-title: "<dark_gray>» <gold>BAITS <dark_gray>(Page %page%/%total%)"
+category-misc-title: "<dark_gray>» <white>%category% <dark_gray>(Page %page%/%total%)"
+category-prev-page: "<yellow>« Previous Page"
+category-next-page: "<yellow>Next Page »"
+category-back-to-main: "<red>MAIN MENU"
+
+# ----- Empty Category -----
+empty-rods-title: "<dark_gray>» <yellow>RODS"
+empty-baits-title: "<dark_gray>» <gold>BAITS"
+empty-misc-title: "<dark_gray>» <white>%category%"
+empty-category-name: "<red><bold>No recipes in this category</bold></red>"
+empty-category-lore-1: "<gray>Recipes are loaded from custom_recipes.yml."
+empty-category-lore-2: "<gray>An admin needs to add recipes."
+empty-category-lore-3: "<dark_gray>Category: <white>%category%"
+empty-back-to-main: "<yellow>« Main Menu"
+
+# ----- Recipe Icon (Category) -----
+recipe-ingredients-header: "<dark_gray>» <gray>Required Materials:"
+recipe-ingredient-line: "%color%  • %name% <dark_gray>(%owned%/%needed%)"
+recipe-level-line: "%color%Required Level: <white>%required% <dark_gray>(Yours: %current%)"
+recipe-xp-line: "<aqua>XP Reward: <white>+%xp%"
+recipe-status-craftable: "<green><bold>✓ Craftable! Click.</bold>"
+recipe-status-low-level: "<red><bold>✖ Insufficient level</bold>"
+recipe-status-missing-materials: "<red><bold>✖ Missing materials</bold>"
+
+# ----- Recipe Detail -----
+detail-title: "<dark_gray>» <gold>Recipe Detail"
+detail-result-lore: "<dark_gray>» <gray>You will craft this item"
+detail-ingredients-name: "<yellow>Required Materials"
+detail-ingredient-line: "%color%• %name% <dark_gray>×%needed% <dark_gray>(Inv: %owned%)"
+detail-level-line: "%color%Required Level: <white>%required% <dark_gray>(Yours: %current%)"
+detail-xp-line: "<aqua>XP Reward: <white>+%xp%"
+detail-last-craft: "<dark_gray>Last Craft: <white>%time%"
+detail-max-craftable: "<dark_gray>Max Craftable: <white>%count%x"
+detail-craft-name: "<green><bold>✔ CRAFT"
+detail-craft-lore-1: "<gray>Click to craft 1 item."
+detail-craft-lore-2: "<dark_gray>Materials will be consumed."
+detail-craft-shift-hint: "<yellow><bold>Shift-click: <white>%count%x bulk craft!"
+detail-craft-close-name: "<green><bold>✔ CRAFT AND CLOSE"
+detail-craft-close-lore-1: "<gray>Click to craft 1 item and close."
+detail-craft-close-shift-hint: "<yellow><bold>Shift-click: <white>%count%x bulk craft and close!"
+detail-craft-max-name: "<yellow><bold>★ MAX CRAFT"
+detail-craft-max-lore-1: "<gray>Click to craft <white>%count%x items at once."
+detail-craft-max-lore-2: "<dark_gray>Best for fast bulk production."
+detail-craft-disabled-name: "<red><bold>✖ CANNOT CRAFT"
+detail-craft-disabled-lore-1: "%reason%"
+detail-craft-disabled-lore-2: "<dark_gray>Activates when requirements are met."
+detail-craft-disabled-reason-level: "<red>Insufficient level!"
+detail-craft-disabled-reason-materials: "<red>Missing materials!"
+detail-back-name: "<yellow>« Back"
+detail-back-lore: "<dark_gray>Return to category menu."
+
+# ----- Craft Results -----
+craft-success-single: "<green>✔ Crafted: <white>%item%</white> <dark_gray>(+%xp% Crafting XP)</green>"
+craft-success-bulk: "<green>✔ <white>%count%x</white> crafted: <white>%item%</white> <dark_gray>(+%xp% Crafting XP)</green>"
+craft-fail-materials: "<red>✖ You don't have all the required materials!</red>"
+craft-fail-level: "<red>✖ Insufficient level! Required: <yellow>%required%</yellow> | Yours: %current%</red>"
+craft-recipe-unknown: "<red>✖ Unknown recipe.</red>"
+craft-no-data: "<red>✖ Crafting system is currently unavailable (XP system disabled).</red>"
+craft-internal-error: "<red>✖ Internal error while crafting. Please contact an admin.</red>"
+craft-bulk-internal-error: "<red>✖ Internal error during bulk craft. Please contact an admin.</red>"
+craft-not-found: "<red>Recipe not found: %recipe_id%"
+
+# ----- Crafting Level-Up -----
+crafting-level-up: "<gold>Your crafting level increased! New Level: %level%</gold>"
+crafting-level-up-title: "<gold><bold>CRAFTING LEVEL UP!</bold></gold>"
+crafting-level-up-subtitle: "<white>New Level: <yellow>%level%</yellow></white>"
+
+# ----- Reload -----
+reload-started: "<yellow>Reloading PhoenixCraft configuration...</yellow>"
+reload-success: "<green>✔ PhoenixCraft configuration reloaded successfully!</green>"
+reload-failed: "<red>✖ Reload failed — check console for details.</red>"
+reload-no-permission: "<red>This command requires <yellow>phoenixcraft.admin</yellow> permission!</red>"
+reload-no-phoenixfish: "<red>PhoenixFish not connected — reload aborted.</red>"
+reload-phoenixfish-started: "<yellow>PhoenixFish reloading...</yellow>"
+reload-phoenixfish-success: "<green>✔ PhoenixFish reloaded. Recipes are up to date.</green>"
+reload-phoenixfish-failed: "<red>✖ Reload command could not be executed. Is PhoenixFish installed?</red>"
+
+# ----- GUI Close Message -----
+gui-closed-reload: "<gray>Crafting menu closed (PhoenixFish reloaded).</gray>"
+
+# ----- Commands -----
+command-player-only: "<red>This command can only be run by a player.</red>"
+command-no-permission: "<red>You don't have permission to use this command!</red>"
+command-unknown-subcommand: "<red>Unknown subcommand. <yellow>/pcraft help</yellow>"
+command-help-header: "<gold>===== PhoenixCraft ====="
+command-help-main: "<yellow>/pcraft <gray>- Open the crafting menu"
+command-help-rods: "<yellow>/pcraft rods <gray>- Jump to rods category"
+command-help-baits: "<yellow>/pcraft baits <gray>- Jump to baits category"
+command-help-reload: "<yellow>/pcraft reload <gray>- Reload config (admin)"
+
+# ----- Console Messages -----
+console-config-loaded: "Configuration loaded (language: %lang%)."
+console-recipes-from-phoenixfish: "Loaded %count% recipes from PhoenixFish."
+console-no-recipes-in-category: "Category '%category%' has no recipes — showing empty state."
+console-phoenixfish-not-found: "PhoenixFish not found! PhoenixCraft will be disabled."
+console-phoenixfish-api-not-registered: "PhoenixFish is loaded but PhoenixFishAPI service is not registered!"
+console-phoenixfish-api-not-registered-hint: "Make sure PhoenixFish version is 1.3.2+ ."
+console-xp-system-disabled: "PhoenixFish XP system is disabled (xp-system.enabled=false)."
+console-xp-system-disabled-hint: "Crafting menus will open but crafting will be blocked."
+console-plugin-enabled: "PhoenixCraft v%version% enabled."
+console-plugin-disabled: "PhoenixCraft disabled."
+console-connected-api: "Connected to PhoenixFishAPI: %class%"
+console-stats-disabled: "Stats system disabled (stats.enabled=false)."
+console-achievements-disabled: "Achievements system disabled (achievements.enabled=false)."
+console-stats-loaded: "Stats system enabled — tracking %count% players."
+console-achievements-loaded: "Achievements system enabled — %count% achievements loaded, %players% players tracked."
+console-achievements-none-defined: "No 'achievements.list' section in config.yml — no achievements will be active."
+console-achievement-invalid-type: "Achievement %id% has invalid type '%type%' — skipping."
+console-achievement-load-error: "Failed to load achievement %id%: %error%"
+console-achievement-reward-failed: "Achievement reward command failed: '%cmd%': %error%"
+console-stats-save-failed: "Failed to save stats.yml: %error%"
+console-achievements-save-failed: "Failed to save achievements.yml: %error%"
+console-invalid-achievement-sound: "Invalid achievement sound: %sound%"
+
+# ----- Stats System -----
+stats-title: "<dark_gray>» <aqua>Crafting Stats"
+stats-total-crafts: "<gray>Total Crafts: <white>%count%"
+stats-total-xp: "<gray>Total XP Earned: <aqua>%xp%"
+stats-unique-recipes: "<gray>Unique Recipes Crafted: <white>%count%"
+stats-first-craft: "<gray>First Craft: <white>%time%"
+stats-last-craft: "<gray>Last Craft: <white>%time%"
+stats-leaderboard-header: "<gold><bold>Server Top %n%"
+stats-leaderboard-line: "<yellow>%rank%. <white>%player% <dark_gray>— <aqua>%count% crafts"
+stats-leaderboard-empty: "<gray>No crafts recorded yet."
+stats-disabled-name: "<red><bold>Stats Disabled"
+stats-disabled-lore: "<gray>The stats system is disabled in config.yml."
+stats-disabled-message: "<red>The stats system is disabled."
+
+# ----- Achievements System -----
+achievements-title: "<dark_gray>» <gold>Achievements <dark_gray>(<white>%unlocked%/%total%</white>)"
+achievements-progress: "<gray>Progress: <yellow>%unlocked%<dark_gray>/<white>%total%"
+achievement-locked-name: "<gray><italic>%name%"
+achievement-locked-lore-1: "<gray>%description%"
+achievement-locked-lore-2: ""
+achievement-locked-lore-3: "<dark_red>✖ Locked"
+achievement-unlocked-name: "<gold><bold>%name%</bold></gold>"
+achievement-unlocked-lore-1: "<gray>%description%"
+achievement-unlocked-lore-2: ""
+achievement-unlocked-lore-3: "<green>✔ Unlocked"
+achievements-empty: "<gray>No achievements defined in config.yml."
+achievements-disabled-name: "<red><bold>Achievements Disabled"
+achievements-disabled-lore: "<gray>The achievements system is disabled in config.yml."
+achievements-disabled-message: "<red>The achievements system is disabled."
+
+# ----- Achievement Unlock Notification -----
+achievement-unlocked: "<gold><bold>★ Achievement Unlocked!</bold></gold> <white>%achievement%</white> <dark_gray>— <gray>%description%"
+achievement-unlocked-title: "<gold><bold>★ ACHIEVEMENT UNLOCKED!</bold></gold>"
+achievement-unlocked-subtitle: "<white>%achievement%</white>"
+
+# ----- Achievement Names & Descriptions -----
+# Built-in achievement display text. Add custom achievements' text here too.
+achievement-first-craft-name: "First Steps"
+achievement-first-craft-desc: "Craft your first item."
+
+achievement-apprentice-name: "Apprentice Crafter"
+achievement-apprentice-desc: "Craft 10 items in total."
+
+achievement-journeyman-name: "Journeyman Crafter"
+achievement-journeyman-desc: "Craft 50 items in total."
+
+achievement-master-name: "Master Crafter"
+achievement-master-desc: "Craft 100 items in total."
+
+achievement-legendary-name: "Legendary Crafter"
+achievement-legendary-desc: "Craft 500 items in total."
+
+achievement-diverse-name: "Diverse Crafter"
+achievement-diverse-desc: "Craft 5 different recipes."
+
+achievement-bulk-master-name: "Bulk Master"
+achievement-bulk-master-desc: "Produce 32+ items in a single bulk craft."
+
+achievement-first-rod-name: "First Rod"
+achievement-first-rod-desc: "Craft your first fishing rod (Hardwood Rod)."
+
+achievement-cosmic-crafter-name: "Cosmic Crafter"
+achievement-cosmic-crafter-desc: "Craft the legendary Cosmic Rod."
+
+achievement-lunar-moth-name: "Master Bait Maker"
+achievement-lunar-moth-desc: "Craft the mythical Lunar Moth bait."
+
+# ----- Main Menu — New Buttons (Stats & Achievements) -----
+main-menu-stats-name: "<aqua>STATS"
+main-menu-stats-lore-1: "<gray>View your crafting statistics."
+main-menu-stats-lore-2: "<dark_gray>Click to open."
+main-menu-achievements-name: "<gold>ACHIEVEMENTS"
+main-menu-achievements-lore-1: "<gray>View your crafting achievements."
+main-menu-achievements-lore-2: "<dark_gray>Click to open."
+
+# ----- Help Command Updates -----
+command-help-stats: "<yellow>/pcraft stats <gray>- View your crafting statistics"
+command-help-achievements: "<yellow>/pcraft achievements <gray>- View your achievements"
+
+# ----- Time Formatting -----
+time-just-now: "just now"
+time-seconds-ago: "%count% seconds ago"
+time-minutes-ago: "%count% minutes ago"
+time-hours-ago: "%count% hours ago"
+time-days-ago: "%count% days ago"
+time-never: "never"
+
+# ----- Search System (Faz 0.4.0) -----
+search-title: "<dark_gray>» <aqua>Search: <white>%query%"
+search-title-with-count: "<dark_gray>» <aqua>Search: <white>%query% <dark_gray>(<white>%count% results</white>)"
+search-prompt: "<yellow>Type your search query in chat. You have %seconds% seconds."
+search-prompt-cancel: "<gray>Type <red>cancel</red> to abort."
+search-cancelled: "<gray>Search cancelled."
+search-timeout: "<red>Search timed out — no input received."
+search-too-short: "<red>Query too short (min %min% characters)."
+search-no-results: "<gray>No recipes found for '<white>%query%<gray>'."
+search-disabled: "<red>The search feature is disabled."
+search-result-count: "<dark_gray>(<white>%count% results</white>)"
+search-button-name: "<aqua>SEARCH"
+search-button-lore: "<gray>Click and type to search recipes."
+
+# ----- Filter System (Faz 0.4.0) -----
+filter-button-name: "<gold>FILTER: <white>%mode%"
+filter-button-lore: "<gray>Click to cycle filter mode."
+filter-mode-all: "ALL"
+filter-mode-craftable: "CRAFTABLE"
+filter-mode-locked: "LOCKED"
+filter-disabled: "<red>The filter feature is disabled."
+
+# ----- Sort System (Faz 0.4.0) -----
+sort-button-name: "<gold>SORT: <white>%mode%"
+sort-button-lore: "<gray>Click to cycle sort mode."
+sort-mode-id: "A-Z"
+sort-mode-level: "LEVEL"
+sort-mode-xp: "XP"
+sort-mode-tier: "TIER"
+sort-disabled: "<red>The sort feature is disabled."
+
+# ----- Category Menu — New Toolbar Buttons -----
+category-search: "<aqua>SEARCH"
+category-search-lore: "<gray>Search recipes by name or id."
+category-filter: "<gold>FILTER"
+category-filter-lore: "<gray>Filter recipes by craftability."
+category-sort: "<gold>SORT"
+category-sort-lore: "<gray>Sort recipes by different criteria."
+
+# ----- Help Command — New Subcommands -----
+command-help-search: "<yellow>/pcraft search <query> <gray>- Search recipes by name"
+
+# ----- Economy System (Faz 0.5.0) -----
+economy-fee-line: "<gold>Fee: <white>$%fee%"
+economy-fee-bulk-line: "<gold>Fee (bulk %count%x): <white>$%fee%"
+economy-insufficient-funds: "<red>✖ Insufficient funds! Need <yellow>$%needed%</yellow>, have $%balance%"
+economy-fee-charged: "<dark_gray>Fee charged: <red>-$%fee%"
+economy-disabled: "<red>The economy system is disabled."
+economy-fee-free: "<green>FREE"
+
+# ----- Recipe Sharing System (Faz 0.5.0) -----
+recipes-title: "<dark_gray>» <gold>Learned Recipes <dark_gray>(<white>%learned%/%total%</white>)"
+recipes-progress: "<gray>Learned: <yellow>%learned%<dark_gray>/<white>%total%"
+recipe-locked-name: "<red><italic>%name%"
+recipe-locked-lore-1: "<gray>You haven't learned this recipe yet."
+recipe-locked-lore-2: "<dark_gray>Find a recipe book to learn it."
+recipe-locked-lore-3: "<dark_red>✖ Locked"
+recipe-learned-name: "<green><bold>%name%</bold></green>"
+recipe-learned-lore-1: "<gray>You have learned this recipe."
+recipe-learned-lore-2: "<green>✔ Learned"
+recipe-not-learned: "<red>You haven't learned this recipe yet."
+recipe-learned-success: "<green>✔ Learned recipe: <white>%recipe%</white>!</green>"
+recipe-already-learned: "<red>You already know this recipe."
+recipe-learn-failed: "<red>Failed to learn recipe: %error%"
+recipe-book-use: "<green>Right-click to learn <white>%recipe%</white>."
+recipe-book-invalid: "<red>This recipe book is invalid."
+recipe-sharing-disabled: "<red>The recipe sharing system is disabled."
+
+# ----- Main Menu — New Buttons (Faz 0.5.0) -----
+main-menu-recipes-name: "<gold>RECIPES"
+main-menu-recipes-lore-1: "<gray>View your learned recipes."
+main-menu-recipes-lore-2: "<dark_gray>Click to open."
+
+# ----- Admin Commands (Faz 0.5.0) -----
+giverecipe-usage: "<yellow>Usage: /pcraft giverecipe <player> <recipe-id>"
+giverecipe-success: "<green>✔ Gave recipe <white>%recipe%</white> to <white>%player%</white>."
+giverecipe-player-not-found: "<red>Player not found: <yellow>%player%</yellow>"
+giverecipe-recipe-not-found: "<red>Recipe not found: <yellow>%recipe%</yellow>"
+giverecipe-no-permission: "<red>You don't have permission to use this command."
+giverecipe-help: "<yellow>/pcraft giverecipe <player> <recipe-id> <gray>- Give a recipe to a player (admin)"
+
+# ----- Sell Command (Faz 0.5.0) -----
+sell-usage: "<yellow>Usage: /pcraft sell <all|hand>"
+sell-no-items: "<red>You have no craftable items to sell."
+sell-success: "<green>✔ Sold %count% items for <white>$%price%</white>!</green>"
+sell-price-line: "<gray>Estimated value: <gold>$%price%"
+
+# ----- Help Command — More Subcommands (Faz 0.5.0) -----
+command-help-recipes: "<yellow>/pcraft recipes <gray>- View your learned recipes"
+command-help-sell: "<yellow>/pcraft sell <all|hand> <gray>- Sell crafted items"
+command-help-giverecipe: "<yellow>/pcraft giverecipe <player> <id> <gray>- Give recipe (admin)"
+
+# ----- Recipe Book Crafting (Faz 0.6.0) -----
+craftbook-usage: "<yellow>Usage: /pcraft craftbook <recipe-id>"
+craftbook-disabled: "<red>Recipe book crafting is disabled."
+craftbook-recipe-not-found: "<red>Recipe not found: <yellow>%recipe%</yellow>"
+craftbook-no-recipe-defined: "<red>No book recipe defined for <yellow>%recipe%</yellow> in config.yml."
+craftbook-low-level: "<red>You need crafting level <yellow>%required%</yellow> to craft recipe books. (Yours: %current%)"
+craftbook-require-learned: "<red>You must learn <yellow>%recipe%</yellow> before you can craft its book."
+craftbook-missing-materials: "<red>✖ Missing materials for this recipe book."
+craftbook-success: "<green>✔ Crafted recipe book: <white>%recipe%</white>!"
+craftbook-materials-header: "<dark_gray>» <gray>Required Materials:"
+craftbook-material-line: "%color%  • %name% <dark_gray>(%owned%/%needed%)"
+
+# ----- Recipe Rental (Faz 0.6.0) -----
+rental-usage: "<yellow>Usage: /pcraft rent <offer|accept|list|cancel> ..."
+rental-disabled: "<red>Recipe rental is disabled."
+rental-offer-usage: "<yellow>Usage: /pcraft rent offer <recipe-id> <price> <minutes>"
+rental-offer-success: "<green>✔ Rental offer created: <white>%recipe%</white> for <gold>$%price%</gold> / <yellow>%minutes%min</yellow>"
+rental-offer-not-learned: "<red>You can't offer a recipe you haven't learned."
+rental-offer-too-many: "<red>You have too many active offers (max %max%)."
+rental-offer-invalid-duration: "<red>Duration must be between %min% and %max% minutes."
+rental-offer-invalid-price: "<red>Price must be between $%min% and $%max%."
+rental-accept-usage: "<yellow>Usage: /pcraft rent accept <player> <recipe-id>"
+rental-accept-not-found: "<red>No active offer from <yellow>%player%</yellow> for <yellow>%recipe%</yellow>."
+rental-accept-insufficient-funds: "<red>Insufficient funds! Need <yellow>$%price%</yellow>, have $%balance%"
+rental-accept-too-many: "<red>You have too many active rentals (max %max%)."
+rental-accept-success: "<green>✔ Rented <white>%recipe%</white> from <yellow>%owner%</yellow> for <gold>$%price%</gold> / <yellow>%minutes%min</yellow>"
+rental-accept-owner-notify: "<green>✔ <yellow>%player%</yellow> rented your <white>%recipe%</white> for <gold>$%price%</gold>."
+rental-list-header: "<gold><bold>Active Rental Offers"
+rental-list-line: "<yellow>%player% <gray>— <white>%recipe% <dark_gray>| <gold>$%price% <dark_gray>| <yellow>%minutes%min"
+rental-list-empty: "<gray>No active rental offers."
+rental-cancel-usage: "<yellow>Usage: /pcraft rent cancel <recipe-id>"
+rental-cancel-success: "<green>✔ Cancelled rental offer for <white>%recipe%</white>."
+rental-cancel-not-found: "<red>You have no active offer for <yellow>%recipe%</yellow>."
+rental-expired: "<red>Your rental for <white>%recipe%</white> has expired."
+rental-fee-charged: "<dark_gray>Transaction fee: <red>-$%fee%"
+rental-list-title: "<dark_gray>» <gold>Rental Offers"
+rental-my-rentals-title: "<dark_gray>» <gold>My Active Rentals"
+
+# ----- Discovery System (Faz 0.6.0) -----
+discovery-first-craft: "<light_purple><bold>★ FIRST DISCOVERY!</bold></light_purple> <white>%recipe%</white> <dark_gray>(<aqua>+%xp% bonus XP</aqua>)"
+discovery-title: "<light_purple><bold>★ NEW DISCOVERY!</bold></light_purple>"
+discovery-subtitle: "<white>%recipe%</white> <dark_gray>(<aqua>+%xp% XP</aqua>)"
+discovery-already-discovered: "<gray>(already discovered — no bonus XP)"
+discovery-disabled: "<red>The discovery system is disabled."
+
+# ----- Black Market (Faz 0.6.0) -----
+blackmarket-title: "<dark_gray>» <dark_red><bold>BLACK MARKET</bold></dark_red> <dark_gray>(refreshes in %time%)"
+blackmarket-empty: "<red>The black market is currently empty. Next refresh in %time%."
+blackmarket-item-name: "<dark_red>%recipe%"
+blackmarket-item-lore-1: "<gray>Price: <gold>$%price%"
+blackmarket-item-lore-2: "<dark_gray>Click to purchase."
+blackmarket-item-lore-3: "<dark_red>Limited stock!"
+blackmarket-purchase-success: "<green>✔ Purchased <white>%recipe%</white> recipe book for <gold>$%price%</gold>!"
+blackmarket-purchase-insufficient-funds: "<red>Insufficient funds! Need <yellow>$%price%</yellow>, have $%balance%"
+blackmarket-purchase-already-bought: "<red>You already bought a recipe this refresh cycle."
+blackmarket-purchase-already-learned: "<red>You already know this recipe."
+blackmarket-purchase-sold-out: "<red>This recipe has been sold out."
+blackmarket-refresh-announce: "<dark_gray>[<dark_red>BLACK MARKET</dark_red>] <gray>New stock available! Use <yellow>/pcraft blackmarket</yellow> to browse."
+blackmarket-refreshed: "<green>✔ Black market refreshed with %count% new recipes."
+blackmarket-refresh-disabled: "<red>The black market is disabled."
+blackmarket-refresh-manual-only: "<gray>Black market is set to manual refresh only."
+blackmarket-no-permission: "<red>You don't have permission to refresh the black market."
+blackmarket-next-refresh: "<gray>Next refresh in: <yellow>%time%"
+blackmarket-time-minutes: "%count%m"
+blackmarket-time-hours: "%count%h %minutes%m"
+blackmarket-time-expired: "<red>expired"
+
+# ----- Help Command — More Subcommands (Faz 0.6.0) -----
+command-help-craftbook: "<yellow>/pcraft craftbook <id> <gray>- Craft a recipe book"
+command-help-rent: "<yellow>/pcraft rent <offer|accept|list|cancel> <gray>- Recipe rental"
+command-help-blackmarket: "<yellow>/pcraft blackmarket <gray>- Browse the black market"

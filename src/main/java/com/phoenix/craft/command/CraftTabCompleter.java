@@ -11,7 +11,8 @@ import java.util.List;
 public class CraftTabCompleter implements TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "rods", "rod", "baits", "bait", "help");
+            "rods", "rod", "baits", "bait", "stats", "achievements",
+            "search", "recipes", "sell", "help");
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
@@ -20,9 +21,23 @@ public class CraftTabCompleter implements TabCompleter {
 
         String prefix = args[0].toLowerCase();
         List<String> out = new ArrayList<>();
+
+        // Always include basic subcommands
         for (String s : SUBCOMMANDS) {
             if (s.startsWith(prefix)) out.add(s);
         }
+
+        // Add reload only for admins (matches CraftCommand permission check)
+        if (sender.hasPermission("phoenixcraft.admin") && "reload".startsWith(prefix)) {
+            out.add("reload");
+        }
+        if (sender.hasPermission("phoenixcraft.admin") && "rl".startsWith(prefix)) {
+            out.add("rl");
+        }
+        if (sender.hasPermission("phoenixcraft.admin") && "giverecipe".startsWith(prefix)) {
+            out.add("giverecipe");
+        }
+
         return out;
     }
 }

@@ -3,22 +3,22 @@ version: "${project.version}"
 main: com.phoenix.craft.PhoenixCraft
 api-version: "1.21"
 author: Sudo
-description: Kategorize crafting GUI for PhoenixFish — olta ve yem üretim sistemi.
+description: Categorized crafting GUI for PhoenixFish — fishing rod & bait crafting system.
 
-# PhoenixFish'in önce yüklenmesi zorunlu
+# PhoenixFish must be loaded before PhoenixCraft
 depend:
   - PhoenixFish
 
 commands:
   pcraft:
-    description: PhoenixCraft crafting menüsünü açar.
-    usage: /pcraft [rods | baits | help]
+    description: Opens the PhoenixCraft crafting menu.
+    usage: /pcraft [rods | baits | reload | help]
     aliases: [pc]
 
 permissions:
   phoenixcraft.use:
-    description: /pcraft komutunu kullanma izni.
+    description: Allows using the /pcraft command.
     default: true
   phoenixcraft.admin:
-    description: Yönetici komutları (reload vb.).
+    description: Administrative subcommands (reload).
     default: op

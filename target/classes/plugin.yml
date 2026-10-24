@@ -1,0 +1,24 @@
+name: PhoenixCraft
+version: "0.6.0"
+main: com.phoenix.craft.PhoenixCraft
+api-version: "1.21"
+author: Sudo
+description: Categorized crafting GUI for PhoenixFish — fishing rod & bait crafting system.
+
+# PhoenixFish must be loaded before PhoenixCraft
+depend:
+  - PhoenixFish
+
+commands:
+  pcraft:
+    description: Opens the PhoenixCraft crafting menu.
+    usage: /pcraft [rods | baits | reload | help]
+    aliases: [pc]
+
+permissions:
+  phoenixcraft.use:
+    description: Allows using the /pcraft command.
+    default: true
+  phoenixcraft.admin:
+    description: Administrative subcommands (reload).
+    default: op
