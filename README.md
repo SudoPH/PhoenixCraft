@@ -51,21 +51,21 @@ PhoenixCraft is a standalone **crafting GUI and progression module** for the Pho
 ## ✨ Features
 
 ### 🎒 Core Crafting GUI
-* **Six distinct menus:** Main menu, category browser, recipe detail, statistics, achievements, and black market (WIP).
-* **Smart Actions:** **Craft**, **Craft & Close**, and **MAX** buttons (MAX automatically crafts as many items as your inventory materials allow).
-* **Bulk Crafting:** Shift-click bulk crafting (up to 1,000 at once) with results neatly added to your inventory in stacks.
-* **Smart Inventory Scanning:** Materials match by item type and Custom Model Data. Consumes from your main inventory (slots 9–35) first, then your hotbar (slots 0–8). Armor and offhand slots are never touched.
+- **Six distinct menus:** Main menu, category browser, recipe detail, statistics, achievements, and black market (WIP).
+- **Smart Actions:** **Craft**, **Craft & Close**, and **MAX** buttons (MAX automatically crafts as many items as your inventory materials allow).
+- **Bulk Crafting:** Shift-click bulk crafting (up to 1,000 at once) with results neatly added to your inventory in stacks.
+- **Smart Inventory Scanning:** Materials match by item type and Custom Model Data. Consumes from your main inventory (slots 9–35) first, then your hotbar (slots 0–8). Armor and offhand slots are never touched.
 
 ### 🔍 Search, Filter, and Sort
-* **Search:** Find recipes instantly via `/pcraft search <query>` or by clicking the search button and typing in chat.
-* **Filter:** Toggle between *All*, *Craftable*, and *Locked* recipes.
-* **Sort:** Organize by ID, Level, XP, or Tier. Your preferences are saved while online.
+- **Search:** Find recipes instantly via `/pcraft search <query>` or by clicking the search button and typing in chat.
+- **Filter:** Toggle between *All*, *Craftable*, and *Locked* recipes.
+- **Sort:** Organize by ID, Level, XP, or Tier. Your preferences are saved while online.
 
 ### 📈 Crafting Level & XP System
-* Curved XP formula based on your level with configurable base values and exponents.
-* **XP Multipliers by Level Range:** $\times 1.0$ (levels 1–10), $\times 1.5$ (11–30), $\times 2.5$ (31–60), $\times 4.0$ (61–80), and $\times 6.0$ (81–100).
-* Global XP multipliers for special server events (e.g., double XP weekends).
-* Level-up celebrations feature titles, custom sounds, and milestone chimes up to level 100.
+- Curved XP formula based on your level with configurable base values and exponents.
+- **XP Multipliers by Level Range:** $\times 1.0$ (levels 1–10), $\times 1.5$ (11–30), $\times 2.5$ (31–60), $\times 4.0$ (61–80), and $\times 6.0$ (81–100).
+- Global XP multipliers for special server events (e.g., double XP weekends).
+- Level-up celebrations feature titles, custom sounds, and milestone chimes up to level 100.
 
 ### 🏷️ Tier System
 PhoenixFish rods and baits are split into **8 color-coded tiers**, influencing crafting sounds and item statistics:
@@ -84,15 +84,15 @@ PhoenixFish rods and baits are split into **8 color-coded tiers**, influencing c
 *(Can be disabled via `tier-system.enabled` in PhoenixFish config).*
 
 ### 🏆 Achievements & Statistics (Untested)
-* **14 Built-in Achievements** across 9 achievement types (first craft, total crafts, unique recipes, bulk crafts, specific recipes, category milestones, total XP, and first discovery) with bronze, silver, gold, and diamond tiers.
-* Rewards can grant items or execute console commands (supporting `%player%`). Add custom achievements in `custom-achievements.yml`.
-* **Statistics & Leaderboards:** Track total crafts, XP earned, unique recipes, and top server crafters.
+- **14 Built-in Achievements** across 9 achievement types (first craft, total crafts, unique recipes, bulk crafts, specific recipes, category milestones, total XP, and first discovery) with bronze, silver, gold, and diamond tiers.
+- Rewards can grant items or execute console commands (supporting `%player%`). Add custom achievements in `custom-achievements.yml`.
+- **Statistics & Leaderboards:** Track total crafts, XP earned, unique recipes, and top server crafters.
 
 ### ⚡ Performance & Quality of Life
-* Fast inventory checking scans player inventories in a single pass.
-* Cached XP formulas and leaderboards.
-* Click cooldowns (150ms) and deferred menu refreshes prevent double-click glitches.
-* Full localization support with English (`messages_en.yml`) and Turkish (`messages_tr.yml`) containing 300+ customizable message keys.
+- Fast inventory checking scans player inventories in a single pass.
+- Cached XP formulas and leaderboards.
+- Click cooldowns (150ms) and deferred menu refreshes prevent double-click glitches.
+- Full localization support with English (`messages_en.yml`) and Turkish (`messages_tr.yml`) containing 300+ customizable message keys.
 
 ---
 
@@ -114,8 +114,8 @@ Since PhoenixCraft is currently in early-stage testing, please refer to the curr
 ## 📦 Installation
 
 ### Requirements
-* **Paper 1.21+** (Java 21)
-* **PhoenixFish 1.3.4+** (Hard dependency: `depend: [PhoenixFish]` in `plugin.yml`)
+- **Paper 1.21+** (Java 21)
+- **PhoenixFish 1.3.4+** (Hard dependency: `depend: [PhoenixFish]` in `plugin.yml`)
 
 ### Installation Steps
 1. Drop `PhoenixFish-1.3.4.jar` into your server's `plugins/` folder.
@@ -126,8 +126,6 @@ Since PhoenixCraft is currently in early-stage testing, please refer to the curr
    [PhoenixFish] PhoenixFish başarıyla etkinleştirildi!
    [PhoenixCraft] PhoenixCraft v1.0.0 etkinleştirildi.
    [PhoenixCraft] Connected to PhoenixFishAPI: com.phoenix.fish.api.PhoenixFishAPI
-
-```
 
 5. Join the server and run `/pcraft`!
 
@@ -283,3 +281,7 @@ PhoenixCraft is free and open-source software, licensed under the **GNU General 
 **Version:** 1.0.0
 
 **Status:** 🚧 Early Access / Testing (Not Fully Released)
+
+```
+
+```
