@@ -1,14 +1,19 @@
 # ============================================================
-# PhoenixCraft — Türkçe Dil Dosyası
+# PhoenixCraft — Türkçe Dil Dosyası (v0.4.1)
 # ============================================================
 # Tüm oyuncuya görünen GUI mesajları burada tutulur.
-# MiniMessage tag'leri kullanın: <red>, <green>, <yellow>, <gold>, <bold>, <italic>, <dark_gray> vb.
-# Placeholder'lar: %recipe_id%, %item_name%, %xp%, %count%, %owned%, %needed%, %level%, %required%, %current%
+# MiniMessage tag'leri: <red>, <green>, <yellow>, <gold>, <bold>, <italic>, <dark_gray>, <aqua>, <gradient:#hex:#hex>, vb.
+# Placeholder'lar:
+#   %recipe_id% %item_name% %xp% %count% %owned% %needed% %level% %required% %current%
+#   %page% %total% %category% %mode% %reason% %player% %recipe% %price% %minutes% %time% %query%
+#   %learned% %unlocked% %achievement% %description% %rank% %fee% %balance% %amount% %levels% %target%
 # ============================================================
 
 prefix: "<dark_gray>[<gradient:#FFA500:#FF6347>PhoenixCraft</gradient>] "
 
-# ----- Ana Menü -----
+# ====================================================================
+#  1. ANA MENÜ
+# ====================================================================
 main-menu-title: "<dark_gray>» <gradient:#FFA500:#FF6347>PhoenixCraft</gradient>"
 main-menu-rods-name: "<yellow>OLTALAR"
 main-menu-rods-lore-1: "<gray>Özel balık tutma oltalarını üret."
@@ -23,7 +28,20 @@ main-menu-info-line-3: ""
 main-menu-info-line-4: "<dark_gray>Tarifler PhoenixFish'in custom_recipes.yml'sinden okunur."
 main-menu-close-name: "<red>KAPAT"
 
-# ----- Kategori Menüsü -----
+# Faz 0.5.0 — ek ana menü butonları
+main-menu-stats-name: "<aqua>İSTATİSTİK"
+main-menu-stats-lore-1: "<gray>Üretim istatistiklerini görüntüle."
+main-menu-stats-lore-2: "<dark_gray>Tıkla ve aç."
+main-menu-achievements-name: "<gold>BAŞARIMLAR"
+main-menu-achievements-lore-1: "<gray>Üretim başarımlarını görüntüle."
+main-menu-achievements-lore-2: "<dark_gray>Tıkla ve aç."
+main-menu-recipes-name: "<gold>TARİFLER"
+main-menu-recipes-lore-1: "<gray>Öğrendiğin tarifleri görüntüle."
+main-menu-recipes-lore-2: "<dark_gray>Tıkla ve aç."
+
+# ====================================================================
+#  2. KATEGORİ MENÜSÜ
+# ====================================================================
 category-rods-title: "<dark_gray>» <yellow>OLTALAR <dark_gray>(Sayfa %page%/%total%)"
 category-baits-title: "<dark_gray>» <gold>YEMLER <dark_gray>(Sayfa %page%/%total%)"
 category-misc-title: "<dark_gray>» <white>%category% <dark_gray>(Sayfa %page%/%total%)"
@@ -31,7 +49,18 @@ category-prev-page: "<yellow>« Önceki Sayfa"
 category-next-page: "<yellow>Sonraki Sayfa »"
 category-back-to-main: "<red>ANA MENÜ"
 
-# ----- Boş Kategori -----
+# Kategori menüsü araç çubuğu (slot 46-49)
+category-search: "<aqua>ARAMA"
+category-search-lore: "<gray>Tarifleri isme veya ID'ye göre ara."
+category-filter: "<gold>FİLTRE"
+category-filter-lore: "<gray>Tarifleri üretilebilirliğe göre filtrele."
+category-sort: "<gold>SIRALA"
+category-sort-lore: "<gray>Tarifleri farklı kriterlere göre sırala."
+
+# ====================================================================
+#  3. BOŞ KATEGORİ (Path A — kategoride gerçekten tarif yok)
+#    Oyuncuya "bir admin tarif eklemeli" mesajı verilir.
+# ====================================================================
 empty-rods-title: "<dark_gray>» <yellow>OLTALAR"
 empty-baits-title: "<dark_gray>» <gold>YEMLER"
 empty-misc-title: "<dark_gray>» <white>%category%"
@@ -41,7 +70,21 @@ empty-category-lore-2: "<gray>Bir adminin tarif eklemesi gerekir."
 empty-category-lore-3: "<dark_gray>Kategori: <white>%category%"
 empty-back-to-main: "<yellow>« Ana Menü"
 
-# ----- Tarif İkonu (Kategori) -----
+# ====================================================================
+#  4. FİLTRE İLE EŞLEŞMEYEN TARİFLER (Path B — Faz 0.4.1)
+#    Tarifler VAR ama aktif filtre hepsini gizliyor.
+#    Oyuncuya "admin tarif eklesin" demek yerine, filtre
+#    değiştirmesi söylenir. Filtereye tıklayınca ALL'a döner.
+# ====================================================================
+filter-no-match-name: "<yellow><bold>Filtrenle eşleşen tarif yok</bold></yellow>"
+filter-no-match-lore-1: "<gray>Aktif filtre: <gold>%mode%</gold>"
+filter-no-match-lore-2: "<yellow>Bu kategorideki tüm tarifler bu filtre tarafından gizlendi."
+filter-no-match-lore-3: "<dark_gray>Filtreyi değiştirmek için aşağıdaki <gold>FİLTRE</gold> butonuna tıkla."
+filter-no-match-system-disabled: "<red>PhoenixFish'in üretim sistemi kapalı (sebep: %reason%). Bir adminin <yellow>xp-system.enabled: true</yellow> yapması gerekir."
+
+# ====================================================================
+#  5. TARİF İKONU (Kategori listesinde her slot)
+# ====================================================================
 recipe-ingredients-header: "<dark_gray>» <gray>Gerekli Malzemeler:"
 recipe-ingredient-line: "%color%  • %name% <dark_gray>(%owned%/%needed%)"
 recipe-level-line: "%color%Gerekli Level: <white>%required% <dark_gray>(Senin: %current%)"
@@ -50,7 +93,9 @@ recipe-status-craftable: "<green><bold>✓ Üretilebilir! Tıkla.</bold>"
 recipe-status-low-level: "<red><bold>✖ Yetersiz level</bold>"
 recipe-status-missing-materials: "<red><bold>✖ Eksik malzeme</bold>"
 
-# ----- Tarif Detayı -----
+# ====================================================================
+#  6. TARİF DETAYI
+# ====================================================================
 detail-title: "<dark_gray>» <gold>Tarif Detayı"
 detail-result-lore: "<dark_gray>» <gray>Bu eşyayı üreteceksin"
 detail-ingredients-name: "<yellow>Gerekli Malzemeler"
@@ -77,7 +122,9 @@ detail-craft-disabled-reason-materials: "<red>Eksik malzeme!"
 detail-back-name: "<yellow>« Geri Dön"
 detail-back-lore: "<dark_gray>Kategori menüsüne dön."
 
-# ----- Üretim Sonuçları -----
+# ====================================================================
+#  7. ÜRETİM SONUÇLARI
+# ====================================================================
 craft-success-single: "<green>✔ <white>%item%</white> <dark_gray>(+%xp% XP)</green>"
 craft-success-bulk: "<green>✔ <white>%count%x</white> <dark_gray>%item% <dark_gray>(+%xp% XP)</green>"
 craft-fail-materials: "<red>✖ Gerekli malzemelerin tamamına sahip değilsin!</red>"
@@ -88,12 +135,16 @@ craft-internal-error: "<red>✖ Üretim sırasında iç hata. Lütfen yetkiliye 
 craft-bulk-internal-error: "<red>✖ Toplu üretim sırasında iç hata. Lütfen yetkiliye bildir.</red>"
 craft-not-found: "<red>Tarif bulunamadı: %recipe_id%"
 
-# ----- Zanaat Level-Up -----
+# ====================================================================
+#  8. ZANAAT LEVEL-UP
+# ====================================================================
 crafting-level-up: "<gold>Zanaat seviyen arttı! Yeni Seviye: %level%</gold>"
 crafting-level-up-title: "<gold><bold>ZANAAT SEVİYESİ ARTTI!</bold></gold>"
 crafting-level-up-subtitle: "<white>Yeni Seviye: <yellow>%level%</yellow></white>"
 
-# ----- Reload -----
+# ====================================================================
+#  9. RELOAD
+# ====================================================================
 reload-started: "<yellow>PhoenixCraft yapılandırması yeniden yükleniyor...</yellow>"
 reload-success: "<green>✔ PhoenixCraft yapılandırması başarıyla yeniden yüklendi!</green>"
 reload-failed: "<red>✖ Yeniden yükleme başarısız — detaylar için konsolu kontrol et.</red>"
@@ -103,20 +154,35 @@ reload-phoenixfish-started: "<yellow>PhoenixFish yeniden yükleniyor...</yellow>
 reload-phoenixfish-success: "<green>✔ PhoenixFish yeniden yüklendi. Tarifler güncel.</green>"
 reload-phoenixfish-failed: "<red>✖ Reload komutu çalıştırılamadı. PhoenixFish yüklü mü?</red>"
 
-# ----- GUI Kapanma Mesajı -----
+# GUI kapanma
 gui-closed-reload: "<gray>Üretim menüsü kapatıldı (PhoenixFish yeniden yüklendi).</gray>"
 
-# ----- Komutlar -----
+# ====================================================================
+#  10. KOMUT MESAJARI
+# ====================================================================
 command-player-only: "<red>Bu komut sadece oyuncular için.</red>"
 command-no-permission: "<red>Bu komutu kullanma yetkin yok!</red>"
 command-unknown-subcommand: "<red>Bilinmeyen altkomut. <yellow>/pcraft help</yellow>"
+
+# /pcraft help içeriği
 command-help-header: "<gold>===== PhoenixCraft ====="
 command-help-main: "<yellow>/pcraft <gray>- Üretim menüsünü aç"
 command-help-rods: "<yellow>/pcraft rods <gray>- Oltalar kategorisi"
 command-help-baits: "<yellow>/pcraft baits <gray>- Yemler kategorisi"
+command-help-stats: "<yellow>/pcraft stats <gray>- Üretim istatistiklerini görüntüle"
+command-help-achievements: "<yellow>/pcraft achievements <gray>- Başarımlarını görüntüle"
+command-help-search: "<yellow>/pcraft search <sorgu> <gray>- Tarifleri isme göre ara"
+command-help-recipes: "<yellow>/pcraft recipes <gray>- Öğrendiğin tarifleri görüntüle"
+command-help-sell: "<yellow>/pcraft sell <all|hand> <gray>- Üretilen eşyaları sat"
+command-help-giverecipe: "<yellow>/pcraft giverecipe <oyuncu> <id> <gray>- Tarif ver (admin)"
+command-help-craftbook: "<yellow>/pcraft craftbook <id> <gray>- Tarif kitabı üret"
+command-help-rent: "<yellow>/pcraft rent <offer|accept|list|cancel> <gray>- Tarif kiralama"
+command-help-blackmarket: "<yellow>/pcraft blackmarket <gray>- Kara borsayı gez"
 command-help-reload: "<yellow>/pcraft reload <gray>- Yapılandırmayı yeniden yükle (admin)"
 
-# ----- Konsol Mesajları -----
+# ====================================================================
+#  11. KONSOL MESAJARI
+# ====================================================================
 console-config-loaded: "Yapılandırma yüklendi (dil: %lang%)."
 console-recipes-from-phoenixfish: "PhoenixFish'ten %count% tarif yüklendi."
 console-no-recipes-in-category: "'%category%' kategorisinde tarif yok — boş durum gösteriliyor."
@@ -140,7 +206,9 @@ console-stats-save-failed: "stats.yml kaydedilemedi: %error%"
 console-achievements-save-failed: "achievements.yml kaydedilemedi: %error%"
 console-invalid-achievement-sound: "Geçersiz başarım sesi: %sound%"
 
-# ----- İstatistik Sistemi -----
+# ====================================================================
+#  12. İSTATİSTİK SİSTEMİ
+# ====================================================================
 stats-title: "<dark_gray>» <aqua>Üretim İstatistikleri"
 stats-total-crafts: "<gray>Toplam Üretim: <white>%count%"
 stats-total-xp: "<gray>Toplam Kazanılan XP: <aqua>%xp%"
@@ -154,28 +222,42 @@ stats-disabled-name: "<red><bold>İstatistik Kapalı"
 stats-disabled-lore: "<gray>İstatistik sistemi config.yml'den kapalı."
 stats-disabled-message: "<red>İstatistik sistemi kapalı."
 
-# ----- Başarım Sistemi -----
+# ====================================================================
+#  13. BAŞARIM SİSTEMİ
+# ====================================================================
 achievements-title: "<dark_gray>» <gold>Başarımlar <dark_gray>(<white>%unlocked%/%total%</white>)"
 achievements-progress: "<gray>İlerleme: <yellow>%unlocked%<dark_gray>/<white>%total%"
-achievement-locked-name: "<gray><italic>%name%"
-achievement-locked-lore-1: "<gray>%description%"
-achievement-locked-lore-2: ""
-achievement-locked-lore-3: "<dark_red>✖ Kilitli"
-achievement-unlocked-name: "<gold><bold>%name%</bold></gold>"
-achievement-unlocked-lore-1: "<gray>%description%"
-achievement-unlocked-lore-2: ""
-achievement-unlocked-lore-3: "<green>✔ Açıldı"
 achievements-empty: "<gray>config.yml'de başarım tanımlanmamış."
 achievements-disabled-name: "<red><bold>Başarımlar Kapalı"
 achievements-disabled-lore: "<gray>Başarım sistemi config.yml'den kapalı."
 achievements-disabled-message: "<red>Başarım sistemi kapalı."
 
-# ----- Başarım Açılma Bildirimi -----
+# Kilitli başarım ikonu
+achievement-locked-name: "<gray><italic>%name%"
+achievement-locked-lore-1: "<gray>%description%"
+achievement-locked-lore-2: ""
+achievement-locked-lore-3: "<dark_red>✖ Kilitli"
+
+# Açılmış başarım ikonu
+achievement-unlocked-name: "<gold><bold>%name%</bold></gold>"
+achievement-unlocked-lore-1: "<gray>%description%"
+achievement-unlocked-lore-2: ""
+achievement-unlocked-lore-3: "<green>✔ Açıldı"
+
+# İlerleme göstergesi (Faz 0.7.0)
+achievement-progress: "<gray>İlerleme: <yellow>%current%<dark_gray>/<white>%target%"
+achievement-tier-bronze: "<#CD7F32>[BRONZ]"
+achievement-tier-silver: "<#C0C0C0>[GÜMÜŞ]"
+achievement-tier-gold: "<gold>[ALTIN]"
+achievement-tier-diamond: "<aqua>[ELMAS]"
+achievement-tier-none: ""
+
+# Bildirim
 achievement-unlocked: "<gold><bold>★ Başarım Açıldı!</bold></gold> <white>%achievement%</white> <dark_gray>— <gray>%description%"
 achievement-unlocked-title: "<gold><bold>★ BAŞARIM AÇILDI!</bold></gold>"
 achievement-unlocked-subtitle: "<white>%achievement%</white>"
 
-# ----- Başarım İsimleri ve Açıklamaları -----
+# Başarım isimleri + açıklamaları
 achievement-first-craft-name: "İlk Adımlar"
 achievement-first-craft-desc: "İlk eşyanı üret."
 
@@ -206,7 +288,7 @@ achievement-cosmic-crafter-desc: "Efsanevi Cosmic Rod'u üret."
 achievement-lunar-moth-name: "Usta Yem Yapıcı"
 achievement-lunar-moth-desc: "Efsanevi Lunar Moth yemini üret."
 
-# Faz 0.7.0: yeni başarım isimleri ve açıklamaları
+# Faz 0.7.0 ekleri
 achievement-worm-master-name: "Solucan Ustası"
 achievement-worm-master-desc: "100 solucan üret."
 
@@ -219,27 +301,9 @@ achievement-xp-hoarder-desc: "Üretimden toplam 5000 XP kazan."
 achievement-discovery-master-name: "Keşif Ustası"
 achievement-discovery-master-desc: "10 farklı tarif keşfet."
 
-# Faz 0.7.0: ilerleme + tier göstergesi
-achievement-progress: "<gray>İlerleme: <yellow>%current%<dark_gray>/<white>%target%"
-achievement-tier-bronze: "<#CD7F32>[BRONZ]"
-achievement-tier-silver: "<#C0C0C0>[GÜMÜŞ]"
-achievement-tier-gold: "<gold>[ALTIN]"
-achievement-tier-diamond: "<aqua>[ELMAS]"
-achievement-tier-none: ""
-
-# ----- Ana Menü — Yeni Butonlar (İstatistik ve Başarımlar) -----
-main-menu-stats-name: "<aqua>İSTATİSTİK"
-main-menu-stats-lore-1: "<gray>Üretim istatistiklerini görüntüle."
-main-menu-stats-lore-2: "<dark_gray>Tıkla ve aç."
-main-menu-achievements-name: "<gold>BAŞARIMLAR"
-main-menu-achievements-lore-1: "<gray>Üretim başarımlarını görüntüle."
-main-menu-achievements-lore-2: "<dark_gray>Tıkla ve aç."
-
-# ----- Yardım Komutu Güncellemeleri -----
-command-help-stats: "<yellow>/pcraft stats <gray>- Üretim istatistiklerini görüntüle"
-command-help-achievements: "<yellow>/pcraft achievements <gray>- Başarımlarını görüntüle"
-
-# ----- Zaman Biçimlendirme -----
+# ====================================================================
+#  14. ZAMAN BİÇİMLENDİRME
+# ====================================================================
 time-just-now: "az önce"
 time-seconds-ago: "%count% saniye önce"
 time-minutes-ago: "%count% dakika önce"
@@ -247,7 +311,9 @@ time-hours-ago: "%count% saat önce"
 time-days-ago: "%count% gün önce"
 time-never: "hiç"
 
-# ----- Arama Sistemi (Faz 0.4.0) -----
+# ====================================================================
+#  15. ARAMA SİSTEMİ (Faz 0.4.0)
+# ====================================================================
 search-title: "<dark_gray>» <aqua>Arama: <white>%query%"
 search-title-with-count: "<dark_gray>» <aqua>Arama: <white>%query% <dark_gray>(<white>%count% sonuç</white>)"
 search-prompt: "<yellow>Chat'e arama sorgunu yaz. %seconds% saniyen var."
@@ -261,7 +327,9 @@ search-result-count: "<dark_gray>(<white>%count% sonuç</white>)"
 search-button-name: "<aqua>ARAMA"
 search-button-lore: "<gray>Tarifleri isme göre ara."
 
-# ----- Filtre Sistemi (Faz 0.4.0) -----
+# ====================================================================
+#  16. FİLTRE SİSTEMİ (Faz 0.4.0)
+# ====================================================================
 filter-button-name: "<gold>FİLTRE: <white>%mode%"
 filter-button-lore: "<gray>Filtre modunu değiştirmek için tıkla."
 filter-mode-all: "HEPSİ"
@@ -269,7 +337,9 @@ filter-mode-craftable: "ÜRETİLEBİLİR"
 filter-mode-locked: "KİLİTLİ"
 filter-disabled: "<red>Filtre özelliği kapalı."
 
-# ----- Sıralama Sistemi (Faz 0.4.0) -----
+# ====================================================================
+#  17. SIRALAMA SİSTEMİ (Faz 0.4.0)
+# ====================================================================
 sort-button-name: "<gold>SIRALA: <white>%mode%"
 sort-button-lore: "<gray>Sıralama modunu değiştirmek için tıkla."
 sort-mode-id: "A-Z"
@@ -278,18 +348,9 @@ sort-mode-xp: "XP"
 sort-mode-tier: "TIER"
 sort-disabled: "<red>Sıralama özelliği kapalı."
 
-# ----- Kategori Menüsü — Yeni Araç Çubuğu Butonları -----
-category-search: "<aqua>ARAMA"
-category-search-lore: "<gray>Tarifleri isme veya ID'ye göre ara."
-category-filter: "<gold>FİLTRE"
-category-filter-lore: "<gray>Tarifleri üretilebilirliğe göre filtrele."
-category-sort: "<gold>SIRALA"
-category-sort-lore: "<gray>Tarifleri farklı kriterlere göre sırala."
-
-# ----- Yardım Komutu — Yeni Altkomutlar -----
-command-help-search: "<yellow>/pcraft search <sorgu> <gray>- Tarifleri isme göre ara"
-
-# ----- Ekonomi Sistemi (Faz 0.5.0) -----
+# ====================================================================
+#  18. EKONOMİ SİSTEMİ (Faz 0.5.0)
+# ====================================================================
 economy-fee-line: "<gold>Ücret: <white>$%fee%"
 economy-fee-bulk-line: "<gold>Ücret (toplu %count%x): <white>$%fee%"
 economy-insufficient-funds: "<red>✖ Yetersiz bakiye! Gerekli: <yellow>$%needed%</yellow>, Mevcut: $%balance%"
@@ -297,7 +358,9 @@ economy-fee-charged: "<dark_gray>Düşülen ücret: <red>-$%fee%"
 economy-disabled: "<red>Ekonomi sistemi kapalı."
 economy-fee-free: "<green>ÜCRETSİZ"
 
-# ----- Tarif Paylaşım Sistemi (Faz 0.5.0) -----
+# ====================================================================
+#  19. TARİF PAYLAŞIM SİSTEMİ (Faz 0.5.0)
+# ====================================================================
 recipes-title: "<dark_gray>» <gold>Öğrenilen Tarifler <dark_gray>(<white>%learned%/%total%</white>)"
 recipes-progress: "<gray>Öğrenilen: <yellow>%learned%<dark_gray>/<white>%total%"
 recipe-locked-name: "<red><italic>%name%"
@@ -315,31 +378,26 @@ recipe-book-use: "<green>Sağ tıkla ve <white>%recipe%</white> tarifini öğren
 recipe-book-invalid: "<red>Bu tarif kitabı geçersiz."
 recipe-sharing-disabled: "<red>Tarif paylaşım sistemi kapalı."
 
-# ----- Ana Menü — Yeni Butonlar (Faz 0.5.0) -----
-main-menu-recipes-name: "<gold>TARİFLER"
-main-menu-recipes-lore-1: "<gray>Öğrendiğin tarifleri görüntüle."
-main-menu-recipes-lore-2: "<dark_gray>Tıkla ve aç."
-
-# ----- Admin Komutları (Faz 0.5.0) -----
+# ====================================================================
+#  20. ADMİN KOMUTLARI (Faz 0.5.0)
+# ====================================================================
 giverecipe-usage: "<yellow>Kullanım: /pcraft giverecipe <oyuncu> <tarif-id>"
 giverecipe-success: "<green>✔ <white>%recipe%</white> tarifi <white>%player%</white>'a verildi."
 giverecipe-player-not-found: "<red>Oyuncu bulunamadı: <yellow>%player%</yellow>"
 giverecipe-recipe-not-found: "<red>Tarif bulunamadı: <yellow>%recipe%</yellow>"
 giverecipe-no-permission: "<red>Bu komutu kullanma yetkin yok."
-giverecipe-help: "<yellow>/pcraft giverecipe <oyuncu> <tarif-id> <gray>- Oyuncuya tarif ver (admin)"
 
-# ----- Satış Komutu (Faz 0.5.0) -----
+# ====================================================================
+#  21. SATIŞ KOMUTU (Faz 0.5.0)
+# ====================================================================
 sell-usage: "<yellow>Kullanım: /pcraft sell <all|hand>"
 sell-no-items: "<red>Satılacak üretilmiş eşyan yok."
 sell-success: "<green>✔ %count% eşya <white>$%price%</white> karşılığında satıldı!</green>"
 sell-price-line: "<gray>Tahmini değer: <gold>$%price%"
 
-# ----- Yardım Komutu — Daha Fazla Altkomut (Faz 0.5.0) -----
-command-help-recipes: "<yellow>/pcraft recipes <gray>- Öğrendiğin tarifleri görüntüle"
-command-help-sell: "<yellow>/pcraft sell <all|hand> <gray>- Üretilen eşyaları sat"
-command-help-giverecipe: "<yellow>/pcraft giverecipe <oyuncu> <id> <gray>- Tarif ver (admin)"
-
-# ----- Tarif Kitabı Üretimi (Faz 0.6.0) -----
+# ====================================================================
+#  22. TARİF KİTABI ÜRETİMİ (Faz 0.6.0)
+# ====================================================================
 craftbook-usage: "<yellow>Kullanım: /pcraft craftbook <tarif-id>"
 craftbook-disabled: "<red>Tarif kitabı üretimi kapalı."
 craftbook-recipe-not-found: "<red>Tarif bulunamadı: <yellow>%recipe%</yellow>"
@@ -351,7 +409,9 @@ craftbook-success: "<green>✔ Tarif kitabı üretildi: <white>%recipe%</white>!
 craftbook-materials-header: "<dark_gray>» <gray>Gerekli Malzemeler:"
 craftbook-material-line: "%color%  • %name% <dark_gray>(%owned%/%needed%)"
 
-# ----- Tarif Kiralama (Faz 0.6.0) -----
+# ====================================================================
+#  23. TARİF KİRALAMA (Faz 0.6.0)
+# ====================================================================
 rental-usage: "<yellow>Kullanım: /pcraft rent <offer|accept|list|cancel> ..."
 rental-disabled: "<red>Tarif kiralama kapalı."
 rental-offer-usage: "<yellow>Kullanım: /pcraft rent offer <tarif-id> <fiyat> <dakika>"
@@ -377,14 +437,18 @@ rental-fee-charged: "<dark_gray>İşlem ücreti: <red>-$%fee%"
 rental-list-title: "<dark_gray>» <gold>Kiralama Teklifleri"
 rental-my-rentals-title: "<dark_gray>» <gold>Aktif Kiralamalarım"
 
-# ----- Keşif Sistemi (Faz 0.6.0) -----
+# ====================================================================
+#  24. KEŞİF SİSTEMİ (Faz 0.6.0)
+# ====================================================================
 discovery-first-craft: "<light_purple><bold>★ İLK KEŞİF!</bold></light_purple> <white>%recipe%</white> <dark_gray>(<aqua>+%xp% bonus XP</aqua>)"
 discovery-title: "<light_purple><bold>★ YENİ KEŞİF!</bold></light_purple>"
 discovery-subtitle: "<white>%recipe%</white> <dark_gray>(<aqua>+%xp% XP</aqua>)"
 discovery-already-discovered: "<gray>(zaten keşfedildi — bonus XP yok)"
 discovery-disabled: "<red>Keşif sistemi kapalı."
 
-# ----- Kara Borsa (Faz 0.6.0) -----
+# ====================================================================
+#  25. KARA BORSA (Faz 0.6.0)
+# ====================================================================
 blackmarket-title: "<dark_gray>» <dark_red><bold>KARA BORSA</bold></dark_red> <dark_gray>(%time% sonra yenilenir)"
 blackmarket-empty: "<red>Kara borsa şu an boş. Sonraki yenileme: %time%."
 blackmarket-item-name: "<dark_red>%recipe%"
@@ -405,8 +469,3 @@ blackmarket-next-refresh: "<gray>Sonraki yenileme: <yellow>%time%"
 blackmarket-time-minutes: "%count%dk"
 blackmarket-time-hours: "%count%sa %minutes%dk"
 blackmarket-time-expired: "<red>süresi doldu"
-
-# ----- Yardım Komutu — Daha Fazla Altkomut (Faz 0.6.0) -----
-command-help-craftbook: "<yellow>/pcraft craftbook <id> <gray>- Tarif kitabı üret"
-command-help-rent: "<yellow>/pcraft rent <offer|accept|list|cancel> <gray>- Tarif kiralama"
-command-help-blackmarket: "<yellow>/pcraft blackmarket <gray>- Kara borsayı gez"

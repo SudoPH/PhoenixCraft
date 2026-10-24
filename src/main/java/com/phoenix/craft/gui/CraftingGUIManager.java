@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.lang.reflect.Method;
 
 /**
  * Crafting GUI manager for PhoenixCraft.
@@ -250,8 +251,11 @@ public class CraftingGUIManager {
 
         // Re-check empty after filter
         if (recipes.isEmpty()) {
-            // Filtered everything out — show empty category with note
-            openEmptyCategoryMenu(player, category);
+            // Filtered everything out — recipes DO exist in this category,
+            // they're just hidden by the active filter. Show a distinct
+            // placeholder (not the "no recipes — admin must add" one).
+            openFilterExcludedMenu(player, category,
+                    playerState.getFilterMode(player.getUniqueId()));
             return;
         }
 
@@ -508,6 +512,146 @@ public class CraftingGUIManager {
                 "main", "none"));
 
         player.openInventory(inv);
+    }
+
+    /**
+     * Empty state shown when the player's current filter excluded every
+     * recipe in the category. Distinct from {@link #openEmptyCategoryMenu}
+     * because the recipes DO exist — they're just hidden by the filter.
+     *
+     * <p>Provides a working filter button (slot 11) so the player can
+     * cycle the filter back to a mode that shows recipes, plus a back
+     * button (slot 15) to the main menu. If PhoenixFish's crafting is
+     * unavailable (e.g. {@code xp-system.enabled: false}), an extra
+     * hint line tells the player what to do.</p>
+     *
+     * @param player   the player viewing the GUI
+     * @param category the current category (e.g. {@code "rod"} or {@code "bait"})
+     * @param mode     the filter mode that excluded everything
+     * @since 0.4.1
+     */
+    private void openFilterExcludedMenu(Player player, String category,
+                                          PlayerGUIState.FilterMode mode) {
+        String titleKey;
+        Map<String, String> titlePh = new HashMap<>();
+        titlePh.put("%category%", category);
+        if ("rod".equals(category)) {
+            titleKey = "empty-rods-title";
+        } else if ("bait".equals(category)) {
+            titleKey = "empty-baits-title";
+        } else {
+            titleKey = "empty-misc-title";
+        }
+        Component title = messages.getMessage(titleKey, titlePh);
+
+        Inventory inv = Bukkit.createInventory(
+                new CraftingGUIHolder(CraftingGUIHolder.ScreenType.CATEGORY, category, 0),
+                27,
+                title);
+
+        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
+        fillBorders(inv, 27, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+
+        // Resolve the localized label for the active filter mode
+        String modeKey;
+        switch (mode) {
+            case CRAFTABLE -> modeKey = "filter-mode-craftable";
+            case LOCKED -> modeKey = "filter-mode-locked";
+            case ALL -> modeKey = "filter-mode-all";
+            default -> modeKey = "filter-mode-all";
+        }
+        String modeLabel = messages.getPlainMessage(modeKey);
+        Map<String, String> ph = new HashMap<>();
+        ph.put("%category%", category);
+        ph.put("%mode%", modeLabel);
+
+        // Center placeholder (slot 13) — explains the filter excluded everything
+        String placeholderMat = plugin.getConfig().getString("gui.buttons.empty-category", "BARRIER");
+        ItemStack placeholder = new ItemStack(parseMaterial(placeholderMat, Material.BARRIER));
+        ItemMeta meta = placeholder.getItemMeta();
+        if (meta != null) {
+            meta.displayName(messages.getMessage("filter-no-match-name"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.empty());
+            lore.add(messages.getMessage("filter-no-match-lore-1", ph));
+            lore.add(messages.getMessage("filter-no-match-lore-2", ph));
+            lore.add(messages.getMessage("filter-no-match-lore-3", ph));
+
+            // If PhoenixFish reports crafting is unavailable, show an extra
+            // hint line telling the player (and any admin reading the chat)
+            // what to do. This catches the most common root cause: the
+            // server left xp-system.enabled=false in PhoenixFish config.
+            //
+            // We use reflection to call getCraftingUnavailableReason() so
+            // this code compiles against OLD PhoenixFish builds too (where
+            // the method doesn't exist yet). If the new PhoenixFish is
+            // loaded at runtime, we get the detailed reason code; otherwise
+            // we fall back to the legacy isCraftingAvailable() flag.
+            String reason = invokeCraftingUnavailableReason(fishApi);
+            if (reason == null) {
+                // Legacy fallback: works against any PhoenixFish version
+                try {
+                    if (!fishApi.isCraftingAvailable()) {
+                        reason = "xp-system-disabled";
+                    }
+                } catch (Throwable ignored) {
+                    // ignore — we just won't show the extra hint
+                }
+            }
+            if (reason != null) {
+                Map<String, String> reasonPh = new HashMap<>();
+                reasonPh.put("%reason%", reason);
+                lore.add(Component.empty());
+                lore.add(messages.getMessage("filter-no-match-system-disabled", reasonPh));
+            }
+
+            meta.lore(lore);
+            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "none");
+            meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
+            placeholder.setItemMeta(meta);
+        }
+        inv.setItem(13, placeholder);
+
+        // Filter button at slot 11 — lets the player cycle the filter back
+        // (e.g. CRAFTABLE → LOCKED → ALL). Clicking it triggers the normal
+        // cycle_filter handler, which reopens this category menu.
+        inv.setItem(11, buildFilterButton(player, category));
+
+        // Back to main menu (slot 15)
+        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
+        inv.setItem(15, createButton(parseMaterial(backMat, Material.ARROW),
+                "empty-back-to-main", List.of(),
+                "main", "none"));
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Reflectively call {@code PhoenixFishAPI.getCraftingUnavailableReason()}
+     * if the method is available on the loaded PhoenixFish build. This lets
+     * PhoenixCraft compile against OLDER PhoenixFish jars (which don't
+     * expose this method yet) and only use the detailed reason code when
+     * the runtime PhoenixFish is new enough.
+     *
+     * @param fishApi the PhoenixFish API instance (never null)
+     * @return the reason code (e.g. {@code "xp-system-disabled"}), or
+     *         {@code null} if the method is unavailable or crafting is
+     *         fully available.
+     * @since 0.4.1
+     */
+    private String invokeCraftingUnavailableReason(PhoenixFishAPI fishApi) {
+        if (fishApi == null) return null;
+        try {
+            Method m = fishApi.getClass().getMethod("getCraftingUnavailableReason");
+            Object result = m.invoke(fishApi);
+            return result instanceof String ? (String) result : null;
+        } catch (NoSuchMethodException ignored) {
+            // Old PhoenixFish build — method doesn't exist; fall back.
+            return null;
+        } catch (Throwable ignored) {
+            // Any other reflection/runtime error — fail soft.
+            return null;
+        }
     }
 
     /**
