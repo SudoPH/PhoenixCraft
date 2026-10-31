@@ -1,0 +1,98 @@
+# ============================================================
+# PhoenixCraft — 自定义成就 (中文版)
+# ============================================================
+# 此文件供服务器管理员添加自定义成就，
+# 无需修改主 config.yml。
+#
+# 此处定义的成就会与 config.yml 中的合并。
+# 如果同一成就 ID 在两个文件中都存在，此文件优先。
+#
+# 如何添加自定义成就：
+# ============================================================
+# 1. 复制下面的模板，粘贴到 "list:" 下
+# 2. 修改 ID（如把 "my-achievement" 改成你自己的唯一名称）
+# 3. 设置 type、target、tier 和奖励
+# 4. 在 messages_zh_cn.yml / messages_en.yml 中添加名称和描述：
+#      achievement-my-achievement-name: "我的成就名称"
+#      achievement-my-achievement-desc: "做一些酷炫的事。"
+# 5. 运行 /pcraft reload
+#
+# 成就类型：
+#   FIRST_CRAFT       — 玩家第一次制作时解锁（无 target）
+#   TOTAL_CRAFTS      — target = 整数（需要的总制作次数）
+#   UNIQUE_RECIPES    — target = 整数（制作的不同配方数）
+#   BULK_CRAFT        — target = 整数（一次批量制作 N+ 个）
+#   RECIPE_CRAFTED    — target = 配方 id（制作此配方一次）
+#   PER_RECIPE_COUNT  — target = "配方id:次数"（制作某配方 N 次）
+#   CATEGORY_CRAFTS   — target = "类别:次数"（如 "rod:50"）
+#   TOTAL_XP_EARNED   — target = 整数（从制作获得的总 XP）
+#   FIRST_DISCOVERY   — target = 整数（发现 N 个不同配方）
+#
+# 阶级：
+#   bronze, silver, gold, diamond, 或 none
+#   （纯视觉 — 仅改变成就 GUI 中显示的前缀）
+#
+# 奖励：
+#   reward-commands — 解锁时运行的 console 命令（用 %player% 占位）
+#   reward-items    — 解锁时给予玩家的实体物品
+# ============================================================
+
+list:
+  # ───────────────────────────────────────────────────────
+  # 模板 — 复制此块并重命名 ID
+  # ───────────────────────────────────────────────────────
+  # my-custom-achievement:
+  #   name: "achievement-my-custom-name"          # messages_*.yml 中的 key
+  #   description: "achievement-my-custom-desc"   # messages_*.yml 中的 key
+  #   type: "TOTAL_CRAFTS"                         # 见上面的类型
+  #   target: "250"                                # 见上面的 target 格式
+  #   tier: "gold"                                 # bronze/silver/gold/diamond/none
+  #   reward-commands:
+  #     - "give %player% diamond 10"
+  #     - "say %player% 解锁了一个自定义成就！"
+  #   reward-items:
+  #     1:
+  #       material: ENCHANTED_GOLDEN_APPLE
+  #       amount: 2
+  #       custom-model-data: 0
+
+  # ───────────────────────────────────────────────────────
+  # 示例：制作 250 个蚯蚓
+  # ───────────────────────────────────────────────────────
+  # worm-tycoon:
+  #   name: "achievement-worm-tycoon-name"
+  #   description: "achievement-worm-tycoon-desc"
+  #   type: "PER_RECIPE_COUNT"
+  #   target: "worm:250"
+  #   tier: "diamond"
+  #   reward-commands:
+  #     - "give %player% emerald_block 1"
+  #   reward-items:
+  #     1:
+  #       material: EMERALD_BLOCK
+  #       amount: 1
+  #       custom-model-data: 0
+
+  # ───────────────────────────────────────────────────────
+  # 示例：赚取 10000 总 XP
+  # ───────────────────────────────────────────────────────
+  # xp-millionaire:
+  #   name: "achievement-xp-millionaire-name"
+  #   description: "achievement-xp-millionaire-desc"
+  #   type: "TOTAL_XP_EARNED"
+  #   target: "10000"
+  #   tier: "diamond"
+  #   reward-commands:
+  #     - "give %player% netherite_block 1"
+
+  # ───────────────────────────────────────────────────────
+  # 示例：制作 100 个鱼饵
+  # ───────────────────────────────────────────────────────
+  # bait-supplier:
+  #   name: "achievement-bait-supplier-name"
+  #   description: "achievement-bait-supplier-desc"
+  #   type: "CATEGORY_CRAFTS"
+  #   target: "bait:100"
+  #   tier: "gold"
+  #   reward-commands:
+  #     - "give %player% gold_ingot 10"

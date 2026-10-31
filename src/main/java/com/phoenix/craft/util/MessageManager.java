@@ -7,15 +7,42 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * PhoenixCraft'ın kendi dil yöneticisi.
  *
  * <p>PhoenixFish'in MessageManager'ından tamamen bağımsızdır — PhoenixCraft'ın
- * kendi <code>messages_en.yml</code> / <code>messages_tr.yml</code> dosyalarını
- * okur. Hangi dilin yükleneceği <code>config.yml</code> dosyasındaki
- * <code>settings.language</code> ayarından belirlenir.</p>
+ * kendi dil dosyalarını okur. Hangi dilin yükleneceği <code>config.yml</code>
+ * dosyasındaki <code>settings.language</code> ayarından belirlenir.</p>
+ *
+ * <p><b>Dinamik dil desteği (v1.0.1):</b> Herhangi bir dil kodu kabul edilir
+ * (tr, en, zh_cn, de, fr, es, ...). Dosya veri klasöründe yoksa jar'dan çıkarılır.
+ * Jar'da da yoksa İngilizce fallback kullanılır.</p>
+ *
+ * <p><b>Cascade lookup (v1.1.1 —Console Spam Fix):</b> Bir anahtar aranırken
+ * sırasıyla aşağıdaki kaynaklar kontrol edilir; ilk bulunan değer kullanılır:
+ * <ol>
+ *   <li><code>messages_&lt;dil&gt;.yml</code> — eski düz dosya (en yüksek öncelik,
+ *       geriye dönük uyumluluk için).</li>
+ *   <li><code>lang/&lt;dil&gt;/*.yml</code> — modüler dil dosyaları (v1.1.0+
+ *       tarafından kullanılan yeni anahtarların kaynağı).</li>
+ *   <li><code>messages_en.yml</code> — İngilizce düz dosya (fallback).</li>
+ *   <li><code>lang/en/*.yml</code> — İngilizce modüler dosyalar (son çare).</li>
+ * </ol>
+ *
+ * <p>Bu sayede <code>lang/en/crafting.yml</code></code> içine eklenen yeni bir
+ * anahtar, MessageManager tarafından düzgün şekilde bulunur ve "Missing message
+ * key" uyarısı ASLA konsolu spamlamaz.</p>
+ *
+ * <p><b>One-shot warning cache:</b> Eğer bir anahtar YUKARIDAKİ TÜM kaynaklarda
+ * bulunamazsa, {@link #warnedMissingKeys} küpesine eklenir ve uyarı YALNIZCA BİR
+ * KEZ loglanır. Aynı anahtar için tekrar tekrar uyarı loglanmaz.</p>
  *
  * <p>Reload desteği: {@link #reload()} metodu config + dil dosyalarını
  * yeniden yükler. <code>/pcraft reload</code> komutu bunu çağırır.</p>
@@ -25,9 +52,21 @@ public class MessageManager {
     private final PhoenixCraft plugin;
     private final MiniMessage miniMessage;
 
-    private volatile FileConfiguration langConfig;
+    private volatile FileConfiguration langConfig;       // flat messages_<lang>.yml
+    private volatile FileConfiguration modularConfig;     // merged lang/<lang>/*.yml
+    private volatile FileConfiguration englishFlatConfig; // messages_en.yml fallback
+    private volatile FileConfiguration englishModularConfig; // lang/en/*.yml fallback
     private volatile String prefix;
     private volatile String language;
+
+    /** One-shot warning cache — each missing key is logged AT MOST once. */
+    private final Set<String> warnedMissingKeys = ConcurrentHashMap.newKeySet();
+
+    /** Modular lang domains loaded by LangManager (mirrored here for cascade). */
+    private static final String[] LANG_DOMAINS = {
+        "crafting", "achievements", "blackmarket",
+        "rental", "stats", "commands", "misc"
+    };
 
     public MessageManager(PhoenixCraft plugin) {
         this.plugin = plugin;
@@ -36,41 +75,178 @@ public class MessageManager {
     }
 
     /**
-     * config.yml'den settings.language değerini okur ve ilgili dil dosyasını yükler.
-     * Dil dosyası yoksa İngilizce'ye fallback yapar.
+     * config.yml'den settings.language değerini okur ve ilgili dil dosyalarını
+     * yükler. v1.1.1 — Artık HEM düz dosyaları HEM de modüler lang/ dosyalarını
+     * paralel olarak yükler ve cascade lookup yapar.
      */
     public void loadLanguage() {
         // Save default config if missing
         plugin.saveDefaultConfig();
 
-        // Save both language files (so admins can edit them)
+        // Always extract bundled English + Turkish flat files.
         plugin.saveResource("messages_en.yml", false);
         plugin.saveResource("messages_tr.yml", false);
 
-        String lang = plugin.getConfig().getString("settings.language", "tr").toLowerCase();
-        if (!"tr".equals(lang) && !"en".equals(lang)) {
-            plugin.getLogger().warning("Unknown language '" + lang + "' — defaulting to 'tr'.");
-            lang = "tr";
+        // Read the requested language code from config (lowercased, trimmed).
+        String requestedLang = plugin.getConfig().getString("settings.language", "en");
+        if (requestedLang == null) requestedLang = "en";
+        requestedLang = requestedLang.trim().toLowerCase();
+
+        // Resolve the actual language — accept ANY code if the file exists.
+        String resolvedLang = requestedLang;
+        File langFile = new File(plugin.getDataFolder(), "messages_" + resolvedLang + ".yml");
+
+        if (!langFile.exists()) {
+            String resourcePath = "messages_" + resolvedLang + ".yml";
+            try (InputStream in = plugin.getResource(resourcePath)) {
+                if (in != null) {
+                    plugin.saveResource(resourcePath, false);
+                    plugin.getLogger().info("Extracted bundled language file: " + resourcePath);
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Could not check/extract '" + resourcePath + "': " + e.getMessage());
+            }
         }
 
-        File langFile = new File(plugin.getDataFolder(), "messages_" + lang + ".yml");
+        // If still missing → fall back to English
         if (!langFile.exists()) {
-            plugin.getLogger().warning("Language file 'messages_" + lang + ".yml' not found! Falling back to English.");
+            plugin.getLogger().warning("Language file 'messages_" + resolvedLang
+                    + ".yml' not found in data folder or jar! Falling back to English.");
+            resolvedLang = "en";
             langFile = new File(plugin.getDataFolder(), "messages_en.yml");
-            lang = "en";
             if (!langFile.exists()) {
                 plugin.saveResource("messages_en.yml", false);
             }
         }
 
-        FileConfiguration cfg = YamlConfiguration.loadConfiguration(langFile);
-        String pfx = cfg.getString("prefix", "");
+        // ─── Layer 1: load the flat messages_<lang>.yml ───
+        FileConfiguration flatCfg = YamlConfiguration.loadConfiguration(langFile);
 
-        this.langConfig = cfg;
+        // ─── Layer 2: load modular lang/<lang>/*.yml files (merged into one cfg) ───
+        FileConfiguration modularCfg = loadModularLangFiles(resolvedLang);
+
+        // ─── Layer 3: English flat fallback ───
+        FileConfiguration engFlat = loadJarResourceAsConfig("messages_en.yml");
+
+        // ─── Layer 4: English modular fallback ───
+        FileConfiguration engModular = loadModularLangFiles("en");
+
+        // Attach the Bukkit defaults chain for backward compat with any code
+        // that calls langConfig.getString() directly (Bukkit's setDefaults
+        // mechanism walks one level deep — our own resolveKey walks deeper).
+        flatCfg.setDefaults(engFlat);
+
+        // Read prefix (prefer flat, then modular crafting.yml).
+        String pfx = flatCfg.getString("prefix", "");
+        if (pfx == null || pfx.isEmpty()) {
+            pfx = modularCfg.getString("prefix", "");
+        }
+
+        this.langConfig = flatCfg;
+        this.modularConfig = modularCfg;
+        this.englishFlatConfig = engFlat;
+        this.englishModularConfig = engModular;
         this.prefix = pfx;
-        this.language = lang;
+        this.language = resolvedLang;
+        // Clear the warning cache so a reload re-warns about genuinely missing keys.
+        this.warnedMissingKeys.clear();
 
-        plugin.getLogger().info("Loaded language: " + lang);
+        plugin.getLogger().info("Loaded language: " + resolvedLang
+                + (requestedLang.equals(resolvedLang) ? "" : " (requested '" + requestedLang + "')"));
+    }
+
+    /**
+     * Load all {@code lang/<lang>/<domain>.yml} files and merge them into a
+     * single FileConfiguration. Missing files / missing domains are silently
+     * skipped — they'll be covered by the English fallback layer.
+     */
+    private FileConfiguration loadModularLangFiles(String lang) {
+        FileConfiguration merged = new YamlConfiguration();
+        for (String domain : LANG_DOMAINS) {
+            String path = "lang/" + lang + "/" + domain + ".yml";
+            // 1) On-disk file in the plugin data folder
+            File diskFile = new File(plugin.getDataFolder(), path);
+            if (diskFile.exists()) {
+                try {
+                    FileConfiguration domainCfg = YamlConfiguration.loadConfiguration(diskFile);
+                    mergeConfigs(merged, domainCfg);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Could not load " + path + ": " + e.getMessage());
+                }
+                continue;
+            }
+            // 2) Bundled-in-jar file (UTF-8 reader)
+            try (InputStream in = plugin.getResource(path)) {
+                if (in != null) {
+                    try (InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                        FileConfiguration domainCfg = YamlConfiguration.loadConfiguration(reader);
+                        mergeConfigs(merged, domainCfg);
+                    }
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Could not read bundled " + path + ": " + e.getMessage());
+            }
+        }
+        return merged;
+    }
+
+    /** Copy every key from {@code source} into {@code dest} (no overwrite). */
+    private void mergeConfigs(FileConfiguration dest, FileConfiguration source) {
+        for (String key : source.getKeys(true)) {
+            if (dest.contains(key)) continue;
+            dest.set(key, source.get(key));
+        }
+    }
+
+    /** Load a UTF-8 resource bundled in the jar as a FileConfiguration. */
+    private FileConfiguration loadJarResourceAsConfig(String resourcePath) {
+        try (InputStream in = plugin.getResource(resourcePath)) {
+            if (in == null) return new YamlConfiguration();
+            try (InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                return YamlConfiguration.loadConfiguration(reader);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not load bundled " + resourcePath + ": " + e.getMessage());
+            return new YamlConfiguration();
+        }
+    }
+
+    /**
+     * Resolve a key by walking the 4-layer cascade: flat → modular → english-flat
+     * → english-modular. Returns {@code null} if the key is missing from ALL
+     * four layers (extremely unlikely — English bundled files always cover it).
+     *
+     * <p>This is the core of the v1.1.1 console-spam fix: a key added only to
+     * {@code lang/en/crafting.yml} is now found via the modular-english layer,
+     * so the missing-key warning is NEVER triggered for it.</p>
+     */
+    private String resolveKey(String key) {
+        FileConfiguration flat = this.langConfig;
+        FileConfiguration modular = this.modularConfig;
+        FileConfiguration engFlat = this.englishFlatConfig;
+        FileConfiguration engModular = this.englishModularConfig;
+
+        // Layer 1: active-language flat file
+        if (flat != null) {
+            String v = flat.getString(key);
+            if (v != null) return v;
+        }
+        // Layer 2: active-language modular files
+        if (modular != null) {
+            String v = modular.getString(key);
+            if (v != null) return v;
+        }
+        // Layer 3: English flat fallback
+        if (engFlat != null) {
+            String v = engFlat.getString(key);
+            if (v != null) return v;
+        }
+        // Layer 4: English modular fallback
+        if (engModular != null) {
+            String v = engModular.getString(key);
+            if (v != null) return v;
+        }
+        return null;
     }
 
     /**
@@ -154,15 +330,19 @@ public class MessageManager {
 
     private Component getMessageRaw(String key, boolean addPrefix,
                                       Map<String, String> placeholders, boolean escape) {
-        FileConfiguration cfg = this.langConfig;
-        if (cfg == null) {
-            return Component.text("Missing language configuration");
-        }
-
-        String message = cfg.getString(key);
+        // v1.1.1 — Use the 4-layer cascade lookup so keys defined only in
+        // lang/<lang>/crafting.yml are found. This is the fix for the
+        // "Missing message key" console warnings.
+        String message = resolveKey(key);
         if (message == null) {
-            plugin.getLogger().warning("Missing message key: " + key);
-            return Component.empty();
+            // One-shot warning — each missing key is logged AT MOST once
+            // per reload, so the console is never spammed.
+            if (warnedMissingKeys.add(key)) {
+                plugin.getLogger().warning("Missing message key (no fallback found in any layer): " + key);
+            }
+            // Return the raw key as a last-resort placeholder so the GUI
+            // shows something readable instead of an empty Component.
+            return Component.text(key);
         }
 
         message = replacePlaceholdersUnsafe(message, placeholders, escape);
@@ -203,14 +383,12 @@ public class MessageManager {
      * passing it to MiniMessage (e.g. when building multi-line lore).
      */
     public String getPlainMessage(String key, Map<String, String> placeholders) {
-        FileConfiguration cfg = this.langConfig;
-        if (cfg == null) {
-            return "Missing language configuration";
-        }
-
-        String message = cfg.getString(key);
+        // v1.1.1 — cascade lookup + one-shot warning.
+        String message = resolveKey(key);
         if (message == null) {
-            plugin.getLogger().warning("Missing message key: " + key);
+            if (warnedMissingKeys.add(key)) {
+                plugin.getLogger().warning("Missing message key (no fallback found in any layer): " + key);
+            }
             return key;
         }
 

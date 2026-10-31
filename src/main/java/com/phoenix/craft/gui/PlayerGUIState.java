@@ -33,6 +33,21 @@ public class PlayerGUIState {
     /** Players currently in chat-search mode (waiting for chat input). */
     private final Map<UUID, Long> pendingSearchPlayers = new ConcurrentHashMap<>();
 
+    /**
+     * Last search query typed by each player — remembered so the search
+     * results menu can paginate without making the player retype the query
+     * on every page turn. (v1.1.5)
+     */
+    private final Map<UUID, String> lastSearchQuery = new ConcurrentHashMap<>();
+
+    /**
+     * Last search category scope chosen by each player ({@code null} or
+     * {@code "all"} means "search every category"). Paired with
+     * {@link #lastSearchQuery} so {@code openSearchPage} can re-run the
+     * exact same search. (v1.1.5)
+     */
+    private final Map<UUID, String> lastSearchCategory = new ConcurrentHashMap<>();
+
     public FilterMode getFilterMode(UUID uuid) {
         return filterModes.getOrDefault(uuid, FilterMode.ALL);
     }
@@ -97,6 +112,63 @@ public class PlayerGUIState {
         pendingSearchPlayers.remove(uuid);
     }
 
+    // =====================================================================
+    //  Last-search memory (v1.1.5)
+    // =====================================================================
+    //  When a player pages through search results, the GUI re-runs the
+    //  original query on every page turn instead of asking them to retype
+    //  it. These two pairs of accessors store the query + category scope
+    //  between renders. They're cleared on player quit (see {@link #clear}).
+
+    /**
+     * Remember the player's last search query so the search-results menu
+     * can paginate without retyping.
+     *
+     * @param uuid  the player's UUID
+     * @param query the query string (never {@code null}; pass {@code ""} to clear)
+     */
+    public void setLastSearchQuery(UUID uuid, String query) {
+        if (query == null) {
+            lastSearchQuery.remove(uuid);
+        } else {
+            lastSearchQuery.put(uuid, query);
+        }
+    }
+
+    /**
+     * @param uuid the player's UUID
+     * @return the player's last search query, or {@code null} if they have
+     *         never searched (or the query was cleared)
+     */
+    public String getLastSearchQuery(UUID uuid) {
+        return lastSearchQuery.get(uuid);
+    }
+
+    /**
+     * Remember the category scope the player last searched in
+     * ({@code null} or {@code "all"} = search every category).
+     *
+     * @param uuid     the player's UUID
+     * @param category the category id ({@code "rod"}, {@code "bait"}, …),
+     *                 or {@code null}/{@code "all"} for an unscoped search
+     */
+    public void setLastSearchCategory(UUID uuid, String category) {
+        if (category == null || category.isEmpty() || "all".equalsIgnoreCase(category)) {
+            lastSearchCategory.remove(uuid);
+        } else {
+            lastSearchCategory.put(uuid, category);
+        }
+    }
+
+    /**
+     * @param uuid the player's UUID
+     * @return the player's last search category scope, or {@code null} if
+     *         their last search was unscoped (all categories)
+     */
+    public String getLastSearchCategory(UUID uuid) {
+        return lastSearchCategory.get(uuid);
+    }
+
     /**
      * Cleanup on player quit.
      */
@@ -104,5 +176,7 @@ public class PlayerGUIState {
         filterModes.remove(uuid);
         sortModes.remove(uuid);
         pendingSearchPlayers.remove(uuid);
+        lastSearchQuery.remove(uuid);
+        lastSearchCategory.remove(uuid);
     }
 }

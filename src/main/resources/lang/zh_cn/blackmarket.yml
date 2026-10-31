@@ -1,0 +1,33 @@
+# ============================================================
+# PhoenixCraft — Black Market strings (简体中文)
+# ============================================================
+# Stock listing, purchase flow, refresh announcements, time-remaining.
+# MiniMessage tags supported. Placeholders: %recipe% %price% %balance%
+# %time% %count% %limit% %minutes% %hours%
+# ============================================================
+
+blackmarket-title: "<dark_gray>» <dark_red><bold>黑市</bold></dark_red> <dark_gray>(%time% 后刷新)"
+blackmarket-empty: "<red>黑市目前为空。下次刷新：%time%。"
+blackmarket-item-name: "<dark_red>%recipe%"
+blackmarket-item-lore-1: "<gray>价格：<gold>$%price%"
+blackmarket-item-lore-balance: "<gray>你的余额：<green>$%balance%"
+blackmarket-item-affordable: "<green><bold>✔ 余额足够</bold>"
+blackmarket-item-not-affordable: "<red><bold>✖ 余额不足</bold>"
+blackmarket-item-learned: "<dark_gray><italic>你已经学过此配方 — 买它没意义。"
+blackmarket-item-already-bought: "<yellow><italic>本次刷新周期已买过 (%count%/%limit%)。"
+blackmarket-item-lore-2: "<dark_gray>点击购买。"
+blackmarket-item-lore-3: "<dark_red>库存有限！"
+blackmarket-purchase-success: "<green>✔ 以 <gold>$%price%</gold> 买下 <white>%recipe%</white> 配方书！"
+blackmarket-purchase-insufficient-funds: "<red>余额不足！需要：<yellow>$%price%</yellow>，现有：$%balance%"
+blackmarket-purchase-already-bought: "<red>本次刷新周期你已经买过一个配方。"
+blackmarket-purchase-already-learned: "<red>你已经学过此配方。"
+blackmarket-purchase-sold-out: "<red>此配方已售罄。"
+blackmarket-refresh-announce: "<dark_gray>[<dark_red>黑市</dark_red>] <gray>新货到了！用 <yellow>/pcraft blackmarket</yellow> 浏览。"
+blackmarket-refreshed: "<green>✔ 黑市已刷新，新增 %count% 个配方。"
+blackmarket-refresh-disabled: "<red>黑市已禁用。"
+blackmarket-refresh-manual-only: "<gray>黑市设置为手动刷新。"
+blackmarket-no-permission: "<red>你没有权限刷新黑市。"
+blackmarket-next-refresh: "<gray>下次刷新：<yellow>%time%"
+blackmarket-time-minutes: "%count%分"
+blackmarket-time-hours: "%count%时 %minutes%分"
+blackmarket-time-expired: "<red>已过期"

@@ -1,0 +1,55 @@
+# ============================================================
+# PhoenixCraft — Recipe Extended Attributes
+# ============================================================
+# Per-recipe overrides for the v1.0.7 advanced crafting features.
+# PhoenixFish's custom_recipes.yml is the source of truth for the
+# basic recipe (ingredients, result, level req, XP). This file adds
+# the OPTIONAL extended attributes that PhoenixFish doesn't carry.
+#
+# A recipe with no entry here behaves exactly as it did in v1.0.6 —
+# all features default to OFF.
+#
+# Features covered (see RecipeAttributesManager):
+#   F4 — success-chance / consume-on-fail
+#   F5 — crit-chance / crit-output-multiplier / crit-xp-multiplier
+#   F6 — steps (multi-step crafting sequence)
+#   F7 — material-scale (dynamic ingredient scaling by player level)
+#   F8 — unlock-conditions (gated recipe access)
+#   F13 — success-sound / fail-sound / crit-sound overrides
+# ============================================================
+
+recipes:
+  # ─── Example: legendary_rod with 70% success rate, fails consume materials ───
+  legendary_rod:
+    success-chance: 0.70
+    consume-on-fail: true
+    crit-chance: 0.05
+    crit-output-multiplier: 2.0
+    crit-xp-multiplier: 2.0
+    crit-sound: "UI_TOAST_CHALLENGE_COMPLETE"
+    material-scale:
+      base: 1.0
+      level-factor: 0.01   # each crafting level reduces materials by 1%
+      min: 0.5
+      max: 1.0
+    unlock-conditions:
+      - "level:50"
+      - "craft:hardwood_rod:10"
+      - "discover:25"
+
+  # ─── Example: multi-step netherite_rod (smelt → forge → enchant) ───
+  netherite_rod:
+    steps:
+      - "smelted_netherite_ingot"
+      - "forged_netherite_blade"
+    success-chance: 0.85
+    crit-chance: 0.10
+
+  # ─── Example: cosmic_rod — crit-heavy, no scaling ───
+  cosmic_rod:
+    success-chance: 0.95
+    crit-chance: 0.15
+    crit-output-multiplier: 1.5
+    crit-xp-multiplier: 3.0
+    success-sound: "BLOCK_BEACON_POWER_SELECT"
+    crit-sound: "UI_TOAST_CHALLENGE_COMPLETE"

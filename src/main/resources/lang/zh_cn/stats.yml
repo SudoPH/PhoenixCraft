@@ -1,0 +1,21 @@
+# ============================================================
+# PhoenixCraft — Stats & Leaderboard strings (简体中文)
+# ============================================================
+# Per-player stats menu, leaderboard lines, time-ago formatters.
+# MiniMessage tags supported. Placeholders: %count% %xp% %time%
+# %rank% %player% %balance% %n%
+# ============================================================
+
+stats-title: "<dark_gray>» <aqua>制作统计"
+stats-total-crafts: "<gray>总制作次数：<white>%count%"
+stats-total-xp: "<gray>总 XP 收益：<aqua>%xp%"
+stats-unique-recipes: "<gray>制作的不同配方数：<white>%count%"
+stats-first-craft: "<gray>首次制作：<white>%time%"
+stats-last-craft: "<gray>最近制作：<white>%time%"
+stats-balance: "<gray>余额：<green>$%balance%"
+stats-leaderboard-header: "<gold><bold>全服 Top %n%"
+stats-leaderboard-line: "<yellow>%rank%. <white>%player% <dark_gray>— <aqua>%count% 次制作"
+stats-leaderboard-empty: "<gray>暂无制作记录。"
+stats-disabled-name: "<red><bold>统计已禁用"
+stats-disabled-lore: "<gray>统计系统在 config.yml 中已禁用。"
+stats-disabled-message: "<red>统计系统已禁用。"

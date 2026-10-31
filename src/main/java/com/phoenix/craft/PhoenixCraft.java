@@ -6,6 +6,7 @@ import com.phoenix.craft.command.CraftCommand;
 import com.phoenix.craft.command.CraftTabCompleter;
 import com.phoenix.craft.discovery.DiscoveryManager;
 import com.phoenix.craft.economy.EconomyManager;
+import com.phoenix.craft.favorites.FavoritesManager;
 import com.phoenix.craft.gui.CraftingGUIManager;
 import com.phoenix.craft.listener.CraftingListener;
 import com.phoenix.craft.recipes.RecipeManager;
@@ -56,6 +57,7 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
     private DiscoveryManager discoveryManager;
     private BlackMarketManager blackMarketManager;
     private RentalManager rentalManager;
+    private FavoritesManager favoritesManager;
 
     @Override
     public void onEnable() {
@@ -91,30 +93,85 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         }
 
         // 4. Init Stats + Achievement managers (Faz 0.3.0)
-        this.statsManager = new StatsManager(this);
-        this.achievementManager = new AchievementManager(this, statsManager, messageManager);
+        //    v1.2.0 — Conditionally instantiate based on FeatureFlags so a
+        //    disabled feature costs ZERO CPU/RAM (no manager object, no
+        //    listener, no scheduled task). The GUI manager accepts null
+        //    for any of these and skips rendering the corresponding button.
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "stats")) {
+            this.statsManager = new StatsManager(this);
+        } else {
+            getLogger().info("StatsManager disabled by features.stats.enabled=false — zero overhead.");
+        }
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "achievements")) {
+            this.achievementManager = new AchievementManager(this, statsManager, messageManager);
+        } else {
+            getLogger().info("AchievementManager disabled by features.achievements.enabled=false — zero overhead.");
+        }
 
         // 5. Init Economy + Recipe managers (Faz 0.5.0)
-        this.economyManager = new EconomyManager(this, fishApi);
-        this.recipeManager = new RecipeManager(this, fishApi, messageManager);
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "economy")) {
+            this.economyManager = new EconomyManager(this, fishApi);
+        } else {
+            getLogger().info("EconomyManager disabled by features.economy.enabled=false — zero overhead.");
+        }
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "recipe-sharing")) {
+            this.recipeManager = new RecipeManager(this, fishApi, messageManager);
+        } else {
+            getLogger().info("RecipeManager disabled by features.recipe-sharing.enabled=false — zero overhead.");
+        }
 
-        // 6. Init Discovery + BlackMarket managers (Faz 0.6.0)
-        this.discoveryManager = new DiscoveryManager(this, messageManager);
-        this.blackMarketManager = new BlackMarketManager(this, fishApi);
-        this.rentalManager = new RentalManager(this, fishApi, messageManager);
+        // 6. Init Discovery + BlackMarket + Rental managers (Faz 0.6.0)
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "discovery")) {
+            this.discoveryManager = new DiscoveryManager(this, messageManager);
+        } else {
+            getLogger().info("DiscoveryManager disabled by features.discovery.enabled=false — zero overhead.");
+        }
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "blackmarket")) {
+            this.blackMarketManager = new BlackMarketManager(this, fishApi);
+        } else {
+            getLogger().info("BlackMarketManager disabled by features.blackmarket.enabled=false — zero overhead.");
+        }
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "recipe-rental")) {
+            this.rentalManager = new RentalManager(this, fishApi, messageManager);
+        } else {
+            getLogger().info("RentalManager disabled by features.recipe-rental.enabled=false — zero overhead.");
+        }
 
-        // 7. Init GUI manager
+        // 6b. Init Favorites manager (Faz 1.0.4) — recipe bookmarks persisted to favorites.yml
+        if (com.phoenix.craft.config.FeatureFlags.isEnabled(this, "favorites")) {
+            this.favoritesManager = new FavoritesManager(this);
+            this.favoritesManager.load();
+        } else {
+            getLogger().info("FavoritesManager disabled by features.favorites.enabled=false — zero overhead.");
+        }
+
+        // 7. Init GUI manager — accepts nullable managers and skips rendering
+        //    the corresponding buttons when a manager is null.
+        //    v1.2.0 — the GUI itself is gated by features.gui.main-menu.enabled;
+        //    if disabled, we still construct the manager (so /pcraft commands
+        //    can open it programmatically) but we DON'T register the listener
+        //    if the GUI is fully disabled.
         this.guiManager = new CraftingGUIManager(this, fishApi, messageManager,
                 statsManager, achievementManager, economyManager, recipeManager,
-                discoveryManager, blackMarketManager);
-        Bukkit.getPluginManager().registerEvents(
-                new CraftingListener(this, guiManager, fishApi, messageManager,
-                        recipeManager), this);
+                discoveryManager, blackMarketManager, favoritesManager);
+
+        // Register the inventory-click listener only if at least one GUI
+        // affordance is enabled. If every features.gui.* flag is false,
+        // there's no point paying the event-dispatch cost.
+        if (com.phoenix.craft.config.FeatureFlags.isGuiEnabled(this, "main-menu")
+                || com.phoenix.craft.config.FeatureFlags.isGuiEnabled(this, "recipe-detail")
+                || com.phoenix.craft.config.FeatureFlags.isGuiEnabled(this, "favorites-gui")) {
+            Bukkit.getPluginManager().registerEvents(
+                    new CraftingListener(this, guiManager, fishApi, messageManager,
+                            recipeManager), this);
+        } else {
+            getLogger().info("CraftingListener not registered — all GUI affordances disabled.");
+        }
 
         // Self-register as Listener for PhoenixFishReloadEvent, PluginDisableEvent, PlayerQuitEvent
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        // 6. Register command
+        // 8. Register command
         PluginCommand cmd = getCommand("pcraft");
         if (cmd != null) {
             CraftCommand executor = new CraftCommand(this, guiManager, messageManager,
@@ -126,10 +183,10 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
             getLogger().severe("plugin.yml'de 'pcraft' komutu tanımlı değil!");
         }
 
-        // 7. Schedule auto-save for stats (if enabled)
+        // 9. Schedule auto-save for stats (if enabled)
         scheduleAutoSave();
 
-        // 8. Log success
+        // 10. Log success
         Map<String, String> ph = new HashMap<>();
         ph.put("%version%", getPluginMeta().getVersion());
         ph.put("%class%", fishApi.getClass().getName());
@@ -157,6 +214,9 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         }
         if (rentalManager != null) {
             rentalManager.shutdown();
+        }
+        if (favoritesManager != null) {
+            favoritesManager.shutdown();
         }
 
         // Close any open crafting GUIs before we go
@@ -195,6 +255,9 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
             }
             if (rentalManager != null) {
                 rentalManager.save();
+            }
+            if (favoritesManager != null) {
+                favoritesManager.save();
             }
         }, intervalTicks, intervalTicks);
     }
@@ -279,22 +342,71 @@ public final class PhoenixCraft extends JavaPlugin implements Listener {
         return rentalManager;
     }
 
+    public FavoritesManager getFavoritesManager() {
+        return favoritesManager;
+    }
+
     /**
      * Reload PhoenixCraft config + language files. Called by /pcraft reload.
      *
-     * <p>Note: Stats + Achievement managers reload their config-driven behavior
-     * (achievement definitions, enabled flags) on the next reloadCraftConfig()
-     * call. The data files (stats.yml, achievements.yml) are NOT reloaded —
-     * that would wipe in-memory state.</p>
+     * <p><b>v1.0.1:</b> Now properly refreshes config.yml from disk via
+     * {@link org.bukkit.plugin.java.JavaPlugin#reloadConfig()} BEFORE
+     * reloading MessageManager. All manager isEnabled()/isRequireLearning()
+     * methods now read live from {@code plugin.getConfig()} on every call,
+     * so they automatically pick up the new values without needing their
+     * own explicit reload step.</p>
+     *
+     * <p>Note: The data files (stats.yml, achievements.yml, learned_recipes.yml,
+     * discovered_recipes.yml, rentals.yml, blackmarket.yml) are NOT reloaded
+     * — that would wipe in-memory state (in-progress rentals, scheduled black
+     * market refreshes, leaderboard cache). The achievements DEFINITIONS are
+     * also not reloaded (those are baked into the manager at construction).
+     * To pick up new achievement definitions, restart the server.</p>
      */
     public void reloadCraftConfig() {
+        // Step 1: re-read config.yml from disk into plugin.getConfig()
+        reloadConfig();
+
+        // Step 2: reload MessageManager (re-reads settings.language +
+        // messages_<lang>.yml). MessageManager.reload() also calls
+        // plugin.reloadConfig() — but we already did it above, so the
+        // second call is just a no-op.
         if (messageManager != null) {
             messageManager.reload();
         }
-        // Achievement definitions are re-read from config on reload
-        if (achievementManager != null && achievementManager.isEnabled()) {
-            // Re-init by recreating definitions — but keep unlocked data
-            // (the manager itself reads config dynamically via plugin.getConfig())
+
+        // Step 3: Log the new state of each subsystem so admins can confirm
+        // their config changes took effect.
+        if (economyManager != null) {
+            getLogger().info("EconomyManager after reload: enabled="
+                    + economyManager.isEnabled()
+                    + ", default-fee=$" + getConfig().getDouble("economy.default-fee", 0.0)
+                    + ", charge-per-item-in-bulk="
+                    + getConfig().getBoolean("economy.charge-per-item-in-bulk", true));
+        }
+        if (statsManager != null) {
+            getLogger().info("StatsManager after reload: enabled=" + statsManager.isEnabled());
+        }
+        if (achievementManager != null) {
+            getLogger().info("AchievementManager after reload: enabled=" + achievementManager.isEnabled());
+        }
+        if (discoveryManager != null) {
+            getLogger().info("DiscoveryManager after reload: enabled=" + discoveryManager.isEnabled()
+                    + ", bonus-xp-multiplier=" + getConfig().getDouble("discovery.bonus-xp-multiplier", 4.0));
+        }
+        if (recipeManager != null) {
+            getLogger().info("RecipeManager after reload: enabled=" + recipeManager.isEnabled()
+                    + ", require-learning=" + recipeManager.isRequireLearning());
+        }
+        if (rentalManager != null) {
+            getLogger().info("RentalManager after reload: enabled=" + rentalManager.isEnabled());
+        }
+        if (blackMarketManager != null) {
+            getLogger().info("BlackMarketManager after reload: enabled=" + blackMarketManager.isEnabled()
+                    + ", refresh-interval-min=" + getConfig().getLong("blackmarket.refresh-interval-minutes", 360));
+        }
+        if (favoritesManager != null) {
+            getLogger().info("FavoritesManager after reload: enabled=" + favoritesManager.isEnabled());
         }
     }
 }

@@ -1,0 +1,17 @@
+# ============================================================
+# PhoenixCraft — Misc strings (Türkçe)
+# ============================================================
+# Keys that don't yet belong to a specific domain. Split out as
+# the codebase grows.
+# ============================================================
+
+crafting-level-up: "<gold>Zanaat seviyen arttı! Yeni Seviye: %level%</gold>"
+crafting-level-up-title: "<gold><bold>ZANAAT SEVİYESİ ARTTI!</bold></gold>"
+crafting-level-up-subtitle: "<white>Yeni Seviye: <yellow>%level%</yellow></white>"
+recipes-title: "<dark_gray>» <gold>Öğrenilen Tarifler <dark_gray>(<white>%learned%/%total%</white>)"
+recipes-progress: "<gray>Öğrenilen: <yellow>%learned%<dark_gray>/<white>%total%"
+discovery-first-craft: "<light_purple><bold>★ İLK KEŞİF!</bold></light_purple> <white>%recipe%</white> <dark_gray>(<aqua>+%xp% bonus XP</aqua>)"
+discovery-title: "<light_purple><bold>★ YENİ KEŞİF!</bold></light_purple>"
+discovery-subtitle: "<white>%recipe%</white> <dark_gray>(<aqua>+%xp% XP</aqua>)"
+discovery-already-discovered: "<gray>(zaten keşfedildi — bonus XP yok)"
+discovery-disabled: "<red>Keşif sistemi kapalı."

@@ -1,0 +1,506 @@
+# ============================================================
+# PhoenixCraft — 中文语言文件 (zh_cn)
+# ============================================================
+# 用于测试动态语言支持 + 英文 fallback 机制。
+# 故意缺少几个 key（filter-no-match-system-disabled, crafting-level-up,
+# console_xxx_*），让它们自动从 jar 内置的 messages_en.yml 取值 —
+# 验证 setDefaults 机制。
+# ============================================================
+
+prefix: "<dark_gray>[<gradient:#FFA500:#FF6347>PhoenixCraft</gradient>] "
+
+# ====================================================================
+#  1. 主菜单
+# ====================================================================
+main-menu-title: "<dark_gray>» <gradient:#FFA500:#FF6347>PhoenixCraft</gradient>"
+main-menu-rods-name: "<yellow>鱼竿"
+main-menu-rods-lore-1: "<gray>制作自定义鱼竿。"
+main-menu-rods-lore-2: "<dark_gray>点击查看列表。"
+main-menu-baits-name: "<gold>鱼饵"
+main-menu-baits-lore-1: "<gray>制作吸引鱼的鱼饵。"
+main-menu-baits-lore-2: "<dark_gray>点击查看列表。"
+main-menu-info-name: "<gold>制作信息"
+main-menu-info-line-1: "<gray>制作 XP：<yellow>%xp%<dark_gray>/<white>%xp_required%"
+main-menu-info-line-2: "<gray>制作等级：<yellow>%level%"
+main-menu-info-line-3: ""
+main-menu-info-line-4: "<dark_gray>配方从 PhoenixFish 的 custom_recipes.yml 读取。"
+main-menu-close-name: "<red>关闭"
+
+# Faz 0.5.0 — 主菜单额外按钮
+main-menu-stats-name: "<aqua>统计"
+main-menu-stats-lore-1: "<gray>查看制作统计。"
+main-menu-stats-lore-2: "<dark_gray>点击打开。"
+main-menu-achievements-name: "<gold>成就"
+main-menu-achievements-lore-1: "<gray>查看制作成就。"
+main-menu-achievements-lore-2: "<dark_gray>点击打开。"
+main-menu-recipes-name: "<gold>配方"
+main-menu-recipes-lore-1: "<gray>查看你学过的配方。"
+main-menu-recipes-lore-2: "<dark_gray>点击打开。"
+
+# ====================================================================
+#  2. 类别菜单
+# ====================================================================
+category-rods-title: "<dark_gray>» <yellow>鱼竿 <dark_gray>(第 %page%/%total% 页)"
+category-baits-title: "<dark_gray>» <gold>鱼饵 <dark_gray>(第 %page%/%total% 页)"
+category-misc-title: "<dark_gray>» <white>%category% <dark_gray>(第 %page%/%total% 页)"
+category-prev-page: "<yellow>« 上一页"
+category-next-page: "<yellow>下一页 »"
+category-back-to-main: "<red>主菜单"
+
+# 类别菜单工具栏（slot 46-49）
+category-search: "<aqua>搜索"
+category-search-lore: "<gray>按名称或 ID 搜索配方。"
+category-filter: "<gold>筛选"
+category-filter-lore: "<gray>按可制作性筛选配方。"
+category-sort: "<gold>排序"
+category-sort-lore: "<gray>按不同条件排序配方。"
+
+# ====================================================================
+#  3. 空类别（Path A — 类别里真的没有配方）
+# ====================================================================
+empty-rods-title: "<dark_gray>» <yellow>鱼竿"
+empty-baits-title: "<dark_gray>» <gold>鱼饵"
+empty-misc-title: "<dark_gray>» <white>%category%"
+empty-category-name: "<red><bold>此类别没有配方</bold></red>"
+empty-category-lore-1: "<gray>配方从 custom_recipes.yml 读取。"
+empty-category-lore-2: "<gray>需要管理员添加配方。"
+empty-category-lore-3: "<dark_gray>类别：<white>%category%"
+empty-back-to-main: "<yellow>« 主菜单"
+
+# ====================================================================
+#  4. 筛选未匹配（Path B — Faz 0.4.1）
+#     配方确实存在，但当前筛选隐藏了全部。
+# ====================================================================
+filter-no-match-name: "<yellow><bold>没有匹配筛选的配方</bold></yellow>"
+filter-no-match-lore-1: "<gray>当前筛选：<gold>%mode%</gold>"
+filter-no-match-lore-2: "<yellow>此类别下的所有配方都被此筛选隐藏了。"
+filter-no-match-lore-3: "<dark_gray>点击下方的 <gold>筛选</gold> 按钮切换回去。"
+# ↓↓↓ filter-no-match-system-disabled 故意不翻译 — 测试英文 fallback ↓↓↓
+# filter-no-match-system-disabled: (will fall back to English)
+
+# ====================================================================
+#  5. 配方图标（类别列表中每个 slot）
+# ====================================================================
+recipe-ingredients-header: "<dark_gray>» <gray>所需材料："
+recipe-ingredient-line: "%color%  • %name% <dark_gray>(%owned%/%needed%)"
+recipe-level-line: "%color%所需等级：<white>%required% <dark_gray>(你的：%current%)"
+recipe-xp-line: "<aqua>XP 奖励：<white>+%xp%"
+recipe-status-craftable: "<green><bold>✓ 可制作！点击。</bold>"
+recipe-status-low-level: "<red><bold>✖ 等级不够</bold>"
+recipe-status-missing-materials: "<red><bold>✖ 材料不足</bold>"
+
+# ====================================================================
+#  6. 配方详情
+# ====================================================================
+detail-title: "<dark_gray>» <gold>配方详情"
+detail-result-lore: "<dark_gray>» <gray>你将制作这个物品"
+detail-ingredients-name: "<yellow>所需材料"
+detail-ingredient-line: "%color%• %name% <dark_gray>×%needed% <dark_gray>(背包：%owned%)"
+detail-level-line: "%color%所需等级：<white>%required% <dark_gray>(你的：%current%)"
+detail-xp-line: "<aqua>XP 奖励：<white>+%xp%"
+detail-last-craft: "<dark_gray>上次制作：<white>%time%"
+detail-max-craftable: "<dark_gray>最大可制作：<white>%count%x"
+detail-craft-fee-line: "%color%制作费：<white>$%fee%"
+detail-craft-fee-bulk-line: "%color%批量制作费 (%count%x)：<white>$%fee%"
+detail-craft-name: "<green><bold>✔ 制作"
+detail-craft-lore-1: "<gray>点击制作 1 个。"
+detail-craft-lore-2: "<dark_gray>材料会从背包扣除。"
+detail-craft-shift-hint: "<yellow><bold>Shift+点击：<white>%count%x 批量制作！"
+detail-craft-close-name: "<green><bold>✔ 制作并关闭"
+detail-craft-close-lore-1: "<gray>点击制作 1 个并关闭。"
+detail-craft-close-shift-hint: "<yellow><bold>Shift+点击：<white>%count%x 批量制作并关闭！"
+detail-craft-max-name: "<yellow><bold>★ 最大制作"
+detail-craft-max-lore-1: "<gray>点击一次制作 <white>%count%x 个。"
+detail-craft-max-lore-2: "<dark_gray>最适合快速批量制作。"
+detail-craft-disabled-name: "<red><bold>✖ 无法制作"
+detail-craft-disabled-lore-1: "%reason%"
+detail-craft-disabled-lore-2: "<dark_gray>满足条件后会激活。"
+detail-craft-disabled-reason-level: "<red>等级不够！"
+detail-craft-disabled-reason-materials: "<red>材料不足！"
+detail-back-name: "<yellow>« 返回"
+detail-back-lore: "<dark_gray>返回类别菜单。"
+
+# ----- 收藏 / 书签配方 (Faz 1.0.4) -----
+# 在配方详情 GUI 的第 51 格显示为切换按钮。
+# 两种状态：已收藏（附魔下界星，发光）/ 未收藏（普通下界星）。
+favorite-name-on: "<gold>★ 已收藏！"
+favorite-name-off: "<yellow>☆ 收藏配方"
+favorite-lore-on-1: "<green>状态：已收藏"
+favorite-lore-on-2: "<dark_gray>点击从收藏中移除。"
+favorite-lore-off-1: "<gray>点击收藏此配方。"
+favorite-lore-off-2: "<dark_gray>收藏的配方会保存到你的档案中。"
+favorite-added: "<green>★ 已加入收藏：<white>%recipe%</white></green>"
+favorite-removed: "<yellow>☆ 已从收藏移除：<white>%recipe%</white></yellow>"
+favorite-disabled: "<red>收藏功能已禁用。"
+
+# ====================================================================
+#  7. 制作结果
+# ====================================================================
+craft-success-single: "<green>✔ <white>%item%</white> <dark_gray>(+%xp% XP)</green>"
+craft-success-bulk: "<green>✔ <white>%count%x</white> <dark_gray>%item% <dark_gray>(+%xp% XP)</green>"
+craft-fail-materials: "<red>✖ 你没有所有所需材料！</red>"
+craft-fail-level: "<red>✖ 等级不够！需要：<yellow>%required%</yellow> | 你的：%current%</red>"
+craft-recipe-unknown: "<red>✖ 未知配方。</red>"
+craft-no-data: "<red>✖ 制作系统不可用（XP 系统已禁用）。</red>"
+craft-internal-error: "<red>✖ 制作过程中发生内部错误。请向管理员报告。</red>"
+craft-bulk-internal-error: "<red>✖ 批量制作过程中发生内部错误。请向管理员报告。</red>"
+craft-not-found: "<red>配方未找到：%recipe_id%"
+
+# ====================================================================
+#  8. 制作等级提升
+# ====================================================================
+# ↓↓↓ crafting-level-up 系列故意不翻译 — 测试英文 fallback ↓↓↓
+# crafting-level-up: (will fall back to English)
+# crafting-level-up-title: (will fall back to English)
+# crafting-level-up-subtitle: (will fall back to English)
+
+# ====================================================================
+#  9. Reload
+# ====================================================================
+reload-started: "<yellow>正在重新加载 PhoenixCraft 配置...</yellow>"
+reload-success: "<green>✔ PhoenixCraft 配置已成功重新加载！</green>"
+reload-failed: "<red>✖ 重新加载失败 — 请查看控制台获取详情。</red>"
+reload-no-permission: "<red>此命令需要 <yellow>phoenixcraft.admin</yellow> 权限！</red>"
+reload-no-phoenixfish: "<red>PhoenixFish 未连接 — 无法重新加载。</red>"
+reload-phoenixfish-started: "<yellow>正在重新加载 PhoenixFish...</yellow>"
+reload-phoenixfish-success: "<green>✔ PhoenixFish 已重新加载。配方已更新。</green>"
+reload-phoenixfish-failed: "<red>✖ 无法执行 reload 命令。PhoenixFish 是否已加载？</red>"
+
+# GUI 关闭
+gui-closed-reload: "<gray>制作菜单已关闭（PhoenixFish 已重新加载）。</gray>"
+
+# ====================================================================
+#  10. 命令
+# ====================================================================
+command-player-only: "<red>此命令仅限玩家使用。</red>"
+command-no-permission: "<red>你没有权限使用此命令！</red>"
+command-unknown-subcommand: "<red>未知子命令。<yellow>/pcraft help</yellow>"
+
+# /pcraft help 内容
+command-help-header: "<gold>===== PhoenixCraft ====="
+command-help-main: "<yellow>/pcraft <gray>- 打开制作菜单"
+command-help-rods: "<yellow>/pcraft rods <gray>- 鱼竿类别"
+command-help-baits: "<yellow>/pcraft baits <gray>- 鱼饵类别"
+command-help-stats: "<yellow>/pcraft stats <gray>- 查看制作统计"
+command-help-achievements: "<yellow>/pcraft achievements <gray>- 查看成就"
+command-help-search: "<yellow>/pcraft search <query> <gray>- 按名称搜索配方"
+command-help-recipes: "<yellow>/pcraft recipes <gray>- 查看已学配方"
+command-help-sell: "<yellow>/pcraft sell <all|hand> <gray>- 卖出制作的物品"
+command-help-giverecipe: "<yellow>/pcraft giverecipe <玩家> <id> <gray>- 给予配方（管理员）"
+command-help-craftbook: "<yellow>/pcraft craftbook <id> <gray>- 制作配方书"
+command-help-rent: "<yellow>/pcraft rent <offer|accept|list|cancel> <gray>- 配方租借"
+command-help-blackmarket: "<yellow>/pcraft blackmarket <gray>- 浏览黑市"
+command-help-reload: "<yellow>/pcraft reload <gray>- 重新加载配置（管理员）"
+
+# ====================================================================
+#  11. 控制台消息
+# ↓↓↓ 全部 console_* 故意不翻译 — 这些会从英文 fallback 取值 ↓↓↓
+# 方便管理员在日志里识别（控制台消息默认应保持英文以便于日志搜索）
+# ====================================================================
+
+# ====================================================================
+#  12. 统计系统
+# ====================================================================
+stats-title: "<dark_gray>» <aqua>制作统计"
+stats-total-crafts: "<gray>总制作次数：<white>%count%"
+stats-total-xp: "<gray>总 XP 收益：<aqua>%xp%"
+stats-unique-recipes: "<gray>制作的不同配方数：<white>%count%"
+stats-first-craft: "<gray>首次制作：<white>%time%"
+stats-last-craft: "<gray>最近制作：<white>%time%"
+stats-balance: "<gray>余额：<green>$%balance%"
+stats-leaderboard-header: "<gold><bold>全服 Top %n%"
+stats-leaderboard-line: "<yellow>%rank%. <white>%player% <dark_gray>— <aqua>%count% 次制作"
+stats-leaderboard-empty: "<gray>暂无制作记录。"
+stats-disabled-name: "<red><bold>统计已禁用"
+stats-disabled-lore: "<gray>统计系统在 config.yml 中已禁用。"
+stats-disabled-message: "<red>统计系统已禁用。"
+
+# ====================================================================
+#  13. 成就系统
+# ====================================================================
+achievements-title: "<dark_gray>» <gold>成就 <dark_gray>(<white>%unlocked%/%total%</white>)"
+achievements-progress: "<gray>进度：<yellow>%unlocked%<dark_gray>/<white>%total%"
+achievements-empty: "<gray>config.yml 中未定义成就。"
+achievements-disabled-name: "<red><bold>成就已禁用"
+achievements-disabled-lore: "<gray>成就系统在 config.yml 中已禁用。"
+achievements-disabled-message: "<red>成就系统已禁用。"
+
+# 锁定成就图标
+achievement-locked-name: "<gray><italic>%name%"
+achievement-locked-lore-1: "<gray>%description%"
+achievement-locked-lore-2: ""
+achievement-locked-lore-3: "<dark_red>✖ 已锁定"
+
+# 解锁成就图标
+achievement-unlocked-name: "<gold><bold>%name%</bold></gold>"
+achievement-unlocked-lore-1: "<gray>%description%"
+achievement-unlocked-lore-2: ""
+achievement-unlocked-lore-3: "<green>✔ 已解锁"
+
+# 进度条（Faz 0.7.0）
+achievement-progress: "<gray>进度：<yellow>%current%<dark_gray>/<white>%target%"
+achievement-tier-bronze: "<#CD7F32>[青铜]"
+achievement-tier-silver: "<#C0C0C0>[白银]"
+achievement-tier-gold: "<gold>[黄金]"
+achievement-tier-diamond: "<aqua>[钻石]"
+achievement-tier-none: ""
+
+# 解锁通知
+achievement-unlocked: "<gold><bold>★ 成就解锁！</bold></gold> <white>%achievement%</white> <dark_gray>— <gray>%description%"
+achievement-unlocked-title: "<gold><bold>★ 成就解锁！</bold></gold>"
+achievement-unlocked-subtitle: "<white>%achievement%</white>"
+
+# 成就名称与描述 (Çince çeviri)
+achievement-first-craft-name: "第一步"
+achievement-first-craft-desc: "制作你的第一个物品。"
+
+achievement-apprentice-name: "学徒工匠"
+achievement-apprentice-desc: "总共制作 10 个物品。"
+
+achievement-journeyman-name: "熟手工匠"
+achievement-journeyman-desc: "总共制作 50 个物品。"
+
+achievement-master-name: "大师工匠"
+achievement-master-desc: "总共制作 100 个物品。"
+
+achievement-legendary-name: "传奇工匠"
+achievement-legendary-desc: "总共制作 500 个物品。"
+
+achievement-diverse-name: "多元工匠"
+achievement-diverse-desc: "制作 5 个不同的配方。"
+
+achievement-bulk-master-name: "批量大师"
+achievement-bulk-master-desc: "一次批量制作 32+ 个物品。"
+
+achievement-first-rod-name: "第一根鱼竿"
+achievement-first-rod-desc: "制作你的第一根鱼竿（硬木鱼竿）。"
+
+achievement-cosmic-crafter-name: "宇宙工匠"
+achievement-cosmic-crafter-desc: "制作传说级宇宙鱼竿。"
+
+achievement-lunar-moth-name: "鱼饵制作大师"
+achievement-lunar-moth-desc: "制作传说级月蛾鱼饵。"
+
+# Faz 0.7.0 新成就
+achievement-worm-master-name: "蚯蚓大师"
+achievement-worm-master-desc: "制作 100 个蚯蚓。"
+
+achievement-rod-specialist-name: "鱼竿专家"
+achievement-rod-specialist-desc: "总共制作 50 根鱼竿。"
+
+achievement-xp-hoarder-name: "XP 收集者"
+achievement-xp-hoarder-desc: "从制作中总共赚取 5000 XP。"
+
+achievement-discovery-master-name: "发现大师"
+achievement-discovery-master-desc: "发现 10 个不同的配方。"
+
+# ====================================================================
+#  14. 时间格式
+# ====================================================================
+time-just-now: "刚刚"
+time-seconds-ago: "%count% 秒前"
+time-minutes-ago: "%count% 分钟前"
+time-hours-ago: "%count% 小时前"
+time-days-ago: "%count% 天前"
+time-never: "从未"
+
+# ====================================================================
+#  15. 搜索系统（Faz 0.4.0）
+# ====================================================================
+search-title: "<dark_gray>» <aqua>搜索：<white>%query%"
+search-title-with-count: "<dark_gray>» <aqua>搜索：<white>%query% <dark_gray>(<white>%count% 条结果</white>)"
+search-prompt: "<yellow>在聊天里输入搜索关键词。你有 %seconds% 秒。"
+search-prompt-cancel: "<gray>输入 <red>cancel</red> 取消。"
+search-cancelled: "<gray>搜索已取消。"
+search-timeout: "<red>搜索超时 — 未收到输入。"
+search-too-short: "<red>查询过短（至少 %min% 字符）。"
+search-no-results: "<gray>未找到 '<white>%query%<gray>' 的配方。"
+search-disabled: "<red>搜索功能已禁用。"
+search-result-count: "<dark_gray>(<white>%count% 条结果</white>)"
+search-button-name: "<aqua>搜索"
+search-button-lore: "<gray>按名称搜索配方。"
+
+# ====================================================================
+#  16. 筛选系统（Faz 0.4.0）
+# ====================================================================
+filter-button-name: "<gold>筛选：<white>%mode%"
+filter-button-lore: "<gray>点击切换筛选模式。"
+filter-mode-all: "全部"
+filter-mode-craftable: "可制作"
+filter-mode-locked: "已锁定"
+filter-disabled: "<red>筛选功能已禁用。"
+
+# ====================================================================
+#  17. 排序系统（Faz 0.4.0）
+# ====================================================================
+sort-button-name: "<gold>排序：<white>%mode%"
+sort-button-lore: "<gray>点击切换排序模式。"
+sort-mode-id: "A-Z"
+sort-mode-level: "等级"
+sort-mode-xp: "XP"
+sort-mode-tier: "阶级"
+sort-disabled: "<red>排序功能已禁用。"
+
+# ====================================================================
+#  18. 经济系统（Faz 0.5.0）
+# ====================================================================
+economy-fee-line: "<gold>费用：<white>$%fee%"
+economy-fee-bulk-line: "<gold>费用（批量 %count%x）：<white>$%fee%"
+economy-insufficient-funds: "<red>✖ 余额不足！需要：<yellow>$%needed%</yellow>，现有：$%balance%"
+economy-fee-charged: "<dark_gray>扣除费用：<red>-$%fee%"
+economy-disabled: "<red>经济系统已禁用。"
+economy-fee-free: "<green>免费"
+
+# ====================================================================
+#  19. 配方分享系统（Faz 0.5.0）
+# ====================================================================
+recipes-title: "<dark_gray>» <gold>已学配方 <dark_gray>(<white>%learned%/%total%</white>)"
+recipes-progress: "<gray>已学：<yellow>%learned%<dark_gray>/<white>%total%"
+recipe-locked-name: "<red><italic>%name%"
+recipe-locked-lore-1: "<gray>你还没学过此配方。"
+recipe-locked-lore-2: "<dark_gray>找到配方书来学习。"
+recipe-locked-lore-3: "<dark_red>✖ 已锁定"
+recipe-learned-name: "<green><bold>%name%</bold></green>"
+recipe-learned-lore-1: "<gray>你已学过此配方。"
+recipe-learned-lore-2: "<green>✔ 已学会"
+recipe-not-learned: "<red>你还没学过此配方。"
+recipe-learned-success: "<green>✔ 配方已学会：<white>%recipe%</white>！</green>"
+recipe-already-learned: "<red>你已经学过此配方了。"
+recipe-learn-failed: "<red>学习配方失败：%error%"
+recipe-book-use: "<green>右键使用以学习 <white>%recipe%</white> 配方。"
+recipe-book-invalid: "<red>此配方书无效。"
+recipe-sharing-disabled: "<red>配方分享系统已禁用。"
+
+# ====================================================================
+#  20. 管理员命令（Faz 0.5.0）
+# ====================================================================
+giverecipe-usage: "<yellow>用法：/pcraft giverecipe <玩家> <配方-id>"
+giverecipe-success: "<green>✔ <white>%recipe%</white> 配方已给予 <white>%player%</white>。"
+giverecipe-player-not-found: "<red>玩家未找到：<yellow>%player%</yellow>"
+giverecipe-recipe-not-found: "<red>配方未找到：<yellow>%recipe%</yellow>"
+giverecipe-no-permission: "<red>你没有权限使用此命令。"
+
+# ====================================================================
+#  21. 卖出命令（Faz 0.5.0）
+# ====================================================================
+sell-usage: "<yellow>用法：/pcraft sell <all|hand>"
+sell-no-items: "<red>没有可卖的制作物品。"
+sell-success: "<green>✔ %count% 个物品以 <white>$%price%</white> 卖出！</green>"
+sell-price-line: "<gray>估值：<gold>$%price%"
+
+# ====================================================================
+#  22. 配方书制作（Faz 0.6.0）
+# ====================================================================
+craftbook-usage: "<yellow>用法：/pcraft craftbook <配方-id>"
+craftbook-disabled: "<red>配方书制作已禁用。"
+craftbook-recipe-not-found: "<red>配方未找到：<yellow>%recipe%</yellow>"
+craftbook-no-recipe-defined: "<red><yellow>%recipe%</yellow> 在 config.yml 中未定义书本配方。"
+craftbook-low-level: "<red>制作此配方书需要 <yellow>%required%</yellow> 制作等级。（你的：%current%）"
+craftbook-require-learned: "<red>在制作书本前你必须先学习 <yellow>%recipe%</yellow> 配方。"
+craftbook-missing-materials: "<red>✖ 此配方书所需材料不足。"
+craftbook-success: "<green>✔ 配方书已制作：<white>%recipe%</white>！"
+craftbook-materials-header: "<dark_gray>» <gray>所需材料："
+craftbook-material-line: "%color%  • %name% <dark_gray>(%owned%/%needed%)"
+
+# ====================================================================
+#  23. 配方租借（Faz 0.6.0）
+# ====================================================================
+rental-usage: "<yellow>用法：/pcraft rent <offer|accept|list|cancel> ..."
+rental-disabled: "<red>配方租借已禁用。"
+rental-offer-usage: "<yellow>用法：/pcraft rent offer <配方-id> <价格> <分钟>"
+rental-offer-success: "<green>✔ 租借提议已创建：<white>%recipe%</white> — <gold>$%price%</gold> / <yellow>%minutes%分钟</yellow>"
+rental-offer-not-learned: "<red>你不能租出你还没学过的配方。"
+rental-offer-too-many: "<red>你有太多活跃提议（最多 %max%）。"
+rental-offer-invalid-duration: "<red>时长必须在 %min% 到 %max% 分钟之间。"
+rental-offer-invalid-price: "<red>价格必须在 $%min% 到 $%max% 之间。"
+rental-accept-usage: "<yellow>用法：/pcraft rent accept <玩家> <配方-id>"
+rental-accept-not-found: "<red><yellow>%player%</yellow> 对 <yellow>%recipe%</yellow> 没有活跃提议。"
+rental-accept-insufficient-funds: "<red>余额不足！需要：<yellow>$%price%</yellow>，现有：$%balance%"
+rental-accept-too-many: "<red>你有太多活跃租借（最多 %max%）。"
+rental-accept-success: "<green>✔ 从 <yellow>%owner%</yellow> 租借了 <white>%recipe%</white> — <gold>$%price%</gold> / <yellow>%minutes%分钟</yellow>"
+rental-accept-owner-notify: "<green>✔ <yellow>%player%</yellow> 以 <gold>$%price%</gold> 租借了你的 <white>%recipe%</white>。"
+rental-list-header: "<gold><bold>活跃租借提议"
+rental-list-line: "<yellow>%player% <gray>— <white>%recipe% <dark_gray>| <gold>$%price% <dark_gray>| <yellow>%minutes%分钟"
+rental-list-empty: "<gray>暂无活跃租借提议。"
+rental-cancel-usage: "<yellow>用法：/pcraft rent cancel <配方-id>"
+rental-cancel-success: "<green>✔ <white>%recipe%</white> 的租借提议已取消。"
+rental-cancel-not-found: "<red><yellow>%recipe%</yellow> 没有活跃提议。"
+rental-expired: "<red>你的 <white>%recipe%</white> 租借已过期。"
+rental-fee-charged: "<dark_gray>交易手续费：<red>-$%fee%"
+rental-list-title: "<dark_gray>» <gold>租借提议"
+rental-my-rentals-title: "<dark_gray>» <gold>我的活跃租借"
+
+# ====================================================================
+#  24. 发现系统（Faz 0.6.0）
+# ====================================================================
+discovery-first-craft: "<light_purple><bold>★ 首次发现！</bold></light_purple> <white>%recipe%</white> <dark_gray>(<aqua>+%xp% 奖励 XP</aqua>)"
+discovery-title: "<light_purple><bold>★ 新发现！</bold></light_purple>"
+discovery-subtitle: "<white>%recipe%</white> <dark_gray>(<aqua>+%xp% XP</aqua>)"
+discovery-already-discovered: "<gray>（已发现 — 无奖励 XP）"
+discovery-disabled: "<red>发现系统已禁用。"
+
+# ====================================================================
+#  25. 黑市（Faz 0.6.0）
+# ====================================================================
+blackmarket-title: "<dark_gray>» <dark_red><bold>黑市</bold></dark_red> <dark_gray>(%time% 后刷新)"
+blackmarket-empty: "<red>黑市目前为空。下次刷新：%time%。"
+blackmarket-item-name: "<dark_red>%recipe%"
+blackmarket-item-lore-1: "<gray>价格：<gold>$%price%"
+blackmarket-item-lore-balance: "<gray>你的余额：<green>$%balance%"
+blackmarket-item-affordable: "<green><bold>✔ 余额足够</bold>"
+blackmarket-item-not-affordable: "<red><bold>✖ 余额不足</bold>"
+blackmarket-item-learned: "<dark_gray><italic>你已经学过此配方 — 买它没意义。"
+blackmarket-item-already-bought: "<yellow><italic>本次刷新周期已买过 (%count%/%limit%)。"
+blackmarket-item-lore-2: "<dark_gray>点击购买。"
+blackmarket-item-lore-3: "<dark_red>库存有限！"
+blackmarket-purchase-success: "<green>✔ 以 <gold>$%price%</gold> 买下 <white>%recipe%</white> 配方书！"
+blackmarket-purchase-insufficient-funds: "<red>余额不足！需要：<yellow>$%price%</yellow>，现有：$%balance%"
+blackmarket-purchase-already-bought: "<red>本次刷新周期你已经买过一个配方。"
+blackmarket-purchase-already-learned: "<red>你已经学过此配方。"
+blackmarket-purchase-sold-out: "<red>此配方已售罄。"
+blackmarket-refresh-announce: "<dark_gray>[<dark_red>黑市</dark_red>] <gray>新货到了！用 <yellow>/pcraft blackmarket</yellow> 浏览。"
+blackmarket-refreshed: "<green>✔ 黑市已刷新，新增 %count% 个配方。"
+blackmarket-refresh-disabled: "<red>黑市已禁用。"
+blackmarket-refresh-manual-only: "<gray>黑市设置为手动刷新。"
+blackmarket-no-permission: "<red>你没有权限刷新黑市。"
+blackmarket-next-refresh: "<gray>下次刷新：<yellow>%time%"
+blackmarket-time-minutes: "%count%分"
+blackmarket-time-hours: "%count%时 %minutes%分"
+blackmarket-time-expired: "<red>已过期"
+
+# ============================================================
+# v1.1.0 — 标准 GUI 字符串（从 lang/zh_cn/crafting.yml 镜像）
+# ============================================================
+# 这些键是 v1.1.0 GUI 改版所需的。镜像到旧版扁平文件中，以便尚未
+# 迁移到模块化 lang/zh_cn/*.yml 结构的服务器也能获取它们。
+# MessageManager 的 4 层级联查找无论键在哪个文件中都能找到。
+# ============================================================
+
+# 主菜单 — 搜索按钮（操作栏槽 47）
+main-menu-search-name: "<white>搜索"
+main-menu-search-lore-1: "<gray>搜索所有配方。"
+
+# 主菜单 — 收藏按钮（操作栏槽 51）
+main-menu-favorites-name: "<gold>★ 收藏夹"
+main-menu-favorites-lore-1: "<gray>您置顶的配方。"
+main-menu-favorites-lore-2: "<dark_gray>点击打开收藏夹界面。"
+
+# 禁用的分页箭头 — 在第 1/1 页显示为灰色玻璃板
+category-prev-page-disabled: "<dark_gray>—"
+category-next-page-disabled: "<dark_gray>—"
+
+# 收藏夹界面 — 收藏配方的分页列表
+favorites-gui-title: "<dark_gray>» <gold>★ 我的收藏"
+favorites-empty-name: "<red>暂无收藏"
+favorites-empty-lore-1: "<gray>点击任意配方上的<gold>星标</gold>"
+favorites-empty-lore-2: "<gray>将其加入收藏夹。"
+favorites-gui-empty: "<red>暂无收藏。"
+favorites-gui-empty-lore: "<gray>点击任意配方上的星标将其加入此处。"
+
+# v1.1.0 主面板额外图标（黑市 / 租赁）
+main-menu-blackmarket-name: "<dark_red>黑市"
+main-menu-blackmarket-lore-1: "<gray>购买限量配方书。"
+main-menu-blackmarket-lore-2: "<dark_gray>库存定期刷新。"
+main-menu-rental-name: "<green>配方租赁"
+main-menu-rental-lore-1: "<gray>浏览配方租赁报价。"
+main-menu-rental-lore-2: "<dark_gray>发起或接受租赁。"

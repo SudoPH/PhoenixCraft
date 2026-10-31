@@ -23,13 +23,13 @@ notifications:
   # Message sent when a craft succeeds ("✔ Hardwood Rod (+5 XP)")
   craft-success-chat: true
   # Sound played on successful craft
-  craft-success-sound: true
+  craft-success-sound: false
 
   # ─── Craft Fail ───
   # Message sent when a craft fails (materials/level)
   craft-fail-chat: true
   # Sound played on failed craft
-  craft-fail-sound: true
+  craft-fail-sound: false
 
   # ─── Crafting Level-Up ───
   # Chat message when crafting level increases
@@ -103,6 +103,9 @@ sounds:
   level-up-milestone: "UI_TOAST_CHALLENGE_COMPLETE"
   # Bonus sound for bulk crafts producing 10+ items
   bulk-craft-bonus: "UI_TOAST_CHALLENGE_COMPLETE"
+  # Favorite toggle feedback (recipe detail GUI, slot 51)
+  favorite-add: "UI_TOAST_CHALLENGE_COMPLETE"
+  favorite-remove: "ENTITY_ITEM_PICKUP"
 
 # ============================================================
 # Tier-Based Sounds
@@ -143,7 +146,18 @@ particles:
 # GUI Appearance
 # ============================================================
 gui:
-  # Border pane materials
+  # v1.1.0 — Standardized chrome materials for every 54-slot menu.
+  #   outer-border  = the GRAY border around the top row + bottom row +
+  #                    left/right columns.
+  #   inner-padding = the BLACK glass that fills the empty slots between
+  #                    the content area and the outer border. Using a
+  #                    distinct color from the border creates a clean
+  #                    "framed" look with NO stray/floating items.
+  outer-border: "GRAY_STAINED_GLASS_PANE"
+  inner-padding: "BLACK_STAINED_GLASS_PANE"
+
+  # Legacy border pane materials (kept for backward compat — the new
+  # outer-border / inner-padding keys above take precedence).
   main-menu-border: "GRAY_STAINED_GLASS_PANE"
   category-border: "BLACK_STAINED_GLASS_PANE"
   detail-border: "GRAY_STAINED_GLASS_PANE"
@@ -156,6 +170,14 @@ gui:
     craft-max: "YELLOW_CONCRETE"
     next-page: "ARROW"
     prev-page: "ARROW"
+    # Grayed-out indicator shown when there is no previous/next page.
+    # Always rendered — keeps the action bar symmetric on Page 1/1.
+    page-disabled: "GRAY_STAINED_GLASS_PANE"
+    # Favorite toggle button (recipe detail GUI, slot 51).
+    # Both states use NETHER_STAR by default — the favorited state adds an
+    # enchantment glint (via HIDE_ENCHANTS + Unbreaking I) for the glow.
+    favorite-on: "NETHER_STAR"
+    favorite-off: "NETHER_STAR"
     back: "ARROW"
     close: "BARRIER"
     info: "CRAFTING_TABLE"
@@ -178,6 +200,9 @@ gui:
     recipe-locked: "WRITTEN_BOOK"
     recipe-learned: "KNOWLEDGE_BOOK"
     sell-all: "GOLD_BLOCK"
+    # v1.1.0 — main dashboard extra icons
+    blackmarket: "ENDER_CHEST"
+    rental: "EMERALD"
 
   # Category icons (shown on the main menu)
   category-icons:
@@ -188,8 +213,11 @@ gui:
 # Pagination
 # ============================================================
 pagination:
-  # Recipes per page in category menus
-  items-per-page: 45
+  # Recipes per page in category menus.
+  # The content area is fixed at 28 slots (4 rows × 7 columns, slots 10-43).
+  # Any value larger than 28 is clamped down — items never leak into the
+  # top border row or the bottom action bar.
+  items-per-page: 28
 
 # ============================================================
 # Search System (Faz 0.4.0)
@@ -249,10 +277,10 @@ sort:
 # Recipes without a `crafting-fee` field are free to craft.
 economy:
   # Enable or disable crafting fees
-  enabled: false
+  enabled: true
   # Default fee if a recipe has no explicit `crafting-fee` field
   # 0 = free, 100 = $100 per craft, etc.
-  default-fee: 0
+  default-fee: 100
   # Charge the fee per item in bulk crafts
   # true  = fee × craftedCount
   # false = flat fee per bulk craft
@@ -286,7 +314,7 @@ economy:
 # └──────────────────────────────────────────────────────────────┘
 #
 # MODES:
-#   enabled: false                → ALL recipes available to everyone (legacy)
+#   enabled: true                → ALL recipes available to everyone (legacy)
 #   enabled: true, require-learning: false  → learning is tracked but OPTIONAL
 #   enabled: true, require-learning: true   → MUST learn before crafting
 # ============================================================
@@ -805,3 +833,278 @@ achievements:
       tier: "diamond"
       reward-commands:
         - "give %player% netherite_scrap 1"
+
+# ============================================================
+# Favorites / Bookmarks System (Faz 1.0.4)
+# ============================================================
+# Players can favorite/bookmark recipes from the recipe detail GUI.
+# The favorite toggle button (slot 51) uses NETHER_STAR with an
+# enchantment glint when favorited. State is persisted per-player
+# in favorites.yml (in the plugin data folder).
+favorites:
+  # Enable or disable the favorites feature
+  enabled: true
+
+# ============================================================
+# Modular Feature Flags (v1.1.0)
+# ============================================================
+# Every PhoenixCraft subsystem can be toggled independently here.
+# When a feature's `enabled: false`, the corresponding manager is
+# NEVER instantiated — zero CPU, zero RAM, zero event-handler
+# registrations. Toggling a flag requires /pcraft reload (no
+# server restart needed for most features).
+#
+# Feature keys are read by com.phoenix.craft.config.FeatureFlags,
+# the single source of truth consulted by every manager's
+# isEnabled() method. Default values are defined in FeatureFlags.DEFAULTS.
+# ============================================================
+features:
+  # ─── Core systems ───
+  stats:
+    enabled: true
+  achievements:
+    enabled: true
+  economy:
+    enabled: false
+  recipe-sharing:
+    enabled: false
+  discovery:
+    enabled: true
+  blackmarket:
+    enabled: false
+  recipe-rental:
+    enabled: false
+  favorites:
+    enabled: true
+
+  # ─── v1.0.7 advanced crafting features ───
+  # Each one gates a specific crafting subsystem. When disabled,
+  # the corresponding manager short-circuits in its constructor
+  # and never registers listeners or schedules tasks.
+  tabs:
+    enabled: true
+  crafting-table:
+    enabled: true
+  success-failure-rate:
+    enabled: true
+  critical-success:
+    enabled: true
+  multi-step:
+    enabled: true
+  material-scaling:
+    enabled: true
+  conditional-unlock:
+    enabled: true
+  batch-preview:
+    enabled: true
+  crafting-queue:
+    enabled: true
+  crafting-coop:
+    enabled: true
+  recipe-decay:
+    enabled: false
+  crafting-animation:
+    enabled: true
+
+  # ─── v1.1.0 GUI feature toggles ───
+  # These gate specific GUI affordances without disabling the
+  # underlying crafting system. When a GUI flag is false, the
+  # button/slot is replaced with a black padding pane — no error,
+  # no tooltip, no click handler.
+  gui:
+    main-menu:
+      enabled: true
+    recipe-detail:
+      enabled: true
+    favorites-gui:
+      enabled: true
+    search-button:
+      enabled: true
+    filter-button:
+      enabled: true
+    sort-button:
+      enabled: true
+    pagination-arrows:
+      enabled: true
+    favorite-star:
+      enabled: true
+
+    # v1.2.0 — additional per-feature GUI toggles for non-core subsystems.
+    # These complement the legacy `features.<name>.enabled` flags above by
+    # gating the GUI affordances specifically (the underlying system may
+    # still be enabled for /pcraft commands, but the GUI button is hidden).
+    custom-rods-gui:
+      enabled: true
+    custom-baits-gui:
+      enabled: true
+    crafting-recipe-gui:
+      enabled: true
+    success-rate-display:
+      enabled: true
+    batch-crafting-button:
+      enabled: true
+    dynamic-scaling-display:
+      enabled: true
+    coop-crafting-button:
+      enabled: false
+
+# ============================================================
+# v1.2.0 — Config-Driven GUI Slot Indexes
+# ============================================================
+# Every slot index used by the 54-slot GUI is now configurable here.
+# Server owners can rearrange the action bar, move the favorite star,
+# or shrink the content area without touching Java code.
+#
+# Defaults match the v1.1.x hardcoded layout. Malformed or out-of-range
+# values (e.g. slot 99, or two slots colliding) are detected at startup
+# and silently fall back to the defaults — the plugin never crashes.
+# ============================================================
+gui:
+  slots:
+    # ─── Content area (where recipe icons live in list menus) ───
+    # A list of slot indexes. Must be inside the 10-43 range and must
+    # not overlap with the action-bar slots below. Max 28 slots.
+    content-slots:
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+      - 19
+      - 20
+      - 21
+      - 22
+      - 23
+      - 24
+      - 25
+      - 28
+      - 29
+      - 30
+      - 31
+      - 32
+      - 33
+      - 34
+      - 37
+      - 38
+      - 39
+      - 40
+      - 41
+      - 42
+      - 43
+    # ─── Action bar (Row 6) — standardized nav slots ───
+    info-left:    45
+    prev-page:    46
+    search:       47
+    filter:       48
+    back-close:   49
+    sort:         50
+    favorite:     51
+    next-page:    52
+    info-right:   53
+
+  # ============================================================
+  # v1.2.0 — Config-Driven Main Menu Icon Layout
+  # ============================================================
+  # The main dashboard renders each icon listed here at its configured
+  # slot. Server owners can rearrange icons, swap materials, change the
+  # language key for the tooltip, or remove icons entirely by deleting
+  # the entry. Icons not listed here are simply not rendered (the slot
+  # stays as clean BLACK padding).
+  #
+  # Each entry needs:
+  #   slot:        integer 0-53 (must be a content slot, not border/action-bar)
+  #   material:    Bukkit Material name (e.g. FISHING_ROD)
+  #   name-key:    lang key for the display name
+  #   lore-keys:   list of lang keys for lore lines
+  #   action:      PDC action string the listener dispatches on click
+  #   value:       PDC value string passed to the action handler
+  #   feature:     (optional) feature flag that gates this icon; if the
+  #                flag is disabled, the icon is skipped silently
+  # ============================================================
+  main-menu:
+    icons:
+      - slot: 21
+        material: "FISHING_ROD"
+        name-key: "main-menu-rods-name"
+        lore-keys: ["main-menu-rods-lore-1", "main-menu-rods-lore-2"]
+        action: "category"
+        value: "rod"
+      - slot: 22
+        material: "CRAFTING_TABLE"
+        name-key: "main-menu-info-name"
+        lore-keys: ["main-menu-info-line-1", "main-menu-info-line-2", "main-menu-info-line-3", "main-menu-info-line-4"]
+        action: "none"
+        value: "none"
+        feature: "info-icon"
+        dynamic: true   # placeholders %xp%, %xp_required%, %level% are filled at render time
+      - slot: 23
+        material: "STICK"
+        name-key: "main-menu-baits-name"
+        lore-keys: ["main-menu-baits-lore-1", "main-menu-baits-lore-2"]
+        action: "category"
+        value: "bait"
+      - slot: 30
+        material: "BOOK"
+        name-key: "main-menu-stats-name"
+        lore-keys: ["main-menu-stats-lore-1", "main-menu-stats-lore-2"]
+        action: "open_stats"
+        value: "none"
+        feature: "stats"
+      - slot: 31
+        material: "WRITTEN_BOOK"
+        name-key: "main-menu-recipes-name"
+        lore-keys: ["main-menu-recipes-lore-1", "main-menu-recipes-lore-2"]
+        action: "open_recipes"
+        value: "none"
+        feature: "recipe-sharing"
+      - slot: 32
+        material: "GOLDEN_APPLE"
+        name-key: "main-menu-achievements-name"
+        lore-keys: ["main-menu-achievements-lore-1", "main-menu-achievements-lore-2"]
+        action: "open_achievements"
+        value: "none"
+        feature: "achievements"
+
+  # ============================================================
+  # v1.2.0 — Recipe Detail Slot Map
+  # ============================================================
+  # The recipe-detail GUI also has configurable slots for its
+  # result-preview, ingredients-list, and craft buttons.
+  # ============================================================
+  recipe-detail:
+    slots:
+      result-preview:    13
+      ingredients-list:  11
+      craft-single:      14
+      craft-close:       15
+      craft-max:         22
+
+# ============================================================
+# v1.2.0 — Config-Driven Success Rate & Critical Modifiers (global defaults)
+# ============================================================
+# Per-recipe overrides still come from recipe_attributes.yml via
+# RecipeAttributesManager. These values here are the GLOBAL defaults
+# applied when a recipe has no explicit attributes entry.
+# ============================================================
+crafting-modifiers:
+  # Base success chance (0.0 - 1.0). 1.0 = always succeeds.
+  default-success-chance: 1.0
+  # Base critical success chance (0.0 - 1.0). 0.0 = never crits.
+  default-crit-chance: 0.0
+  # Critical output multiplier (1 = no bonus items, 2 = double, etc.)
+  default-crit-output-multiplier: 1
+  # Critical XP multiplier (1 = no bonus XP, 2 = double, etc.)
+  default-crit-xp-multiplier: 1
+  # Bulk craft cap — max items producible in a single bulk craft.
+  bulk-craft-cap: 1000
+  # Craft cooldown — min milliseconds between two craft actions for the same
+  # player. Prevents race conditions from rapid clicking.
+  craft-cooldown-ms: 150
+  # Material scaling — when enabled, higher-level crafters consume fewer
+  # materials. Scale factor = max(0.1, 1.0 - (playerLevel * 0.01)).
+  material-scaling:
+    enabled: true
+    per-level-reduction: 0.01
+    min-scale: 0.1

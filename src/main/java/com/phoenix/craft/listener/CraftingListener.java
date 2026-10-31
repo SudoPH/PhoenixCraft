@@ -87,6 +87,10 @@ public class CraftingListener implements Listener {
                 if (value != null) gui.openCategoryMenu(player, value, 0);
             }
             case "page" -> {
+                // Legacy category-page action — kept for backward compat
+                // with any third-party plugins that built buttons using
+                // the old PDC format. v1.1.0 buttons now emit paginate_prev
+                // / paginate_next instead.
                 if (value != null) {
                     String[] parts = value.split(":", 2);
                     if (parts.length == 2) {
@@ -98,6 +102,11 @@ public class CraftingListener implements Listener {
                     }
                 }
             }
+            // v1.1.0 — generic pagination actions.
+            //   value format: "menuType:context:pageNumber"
+            //   menuType ∈ {category, recipes, achievements, blackmarket, search, favorites}
+            //   context    = category id (for "category") or empty
+            case "paginate_prev", "paginate_next" -> handlePaginate(action, player, value);
             case "recipe" -> {
                 if (value != null) gui.openRecipeDetail(player, value);
             }
@@ -110,11 +119,24 @@ public class CraftingListener implements Listener {
             case "craft_max" -> {
                 if (value != null) gui.handleCraftClick(player, value, false, false, true);
             }
+            case "toggle_favorite" -> {
+                // Favorite / Bookmark toggle on the recipe detail GUI.
+                // value = recipe id. The handler updates PDC state, plays a
+                // sound, refreshes only slot 51 in-place, and sends a chat
+                // confirmation — no GUI close/reopen.
+                if (value != null) gui.handleFavoriteToggle(player, value);
+            }
             case "open_stats" -> gui.openStatsMenu(player);
             case "open_achievements" -> gui.openAchievementsMenu(player);
             case "open_recipes" -> gui.openRecipesMenu(player);
+            case "open_favorites" -> gui.openFavoritesMenu(player);
+            case "open_blackmarket" -> gui.openBlackMarketMenu(player);
+            case "open_rental" -> {
+                // Recipe rental — handled by CraftCommand; the GUI just shows
+                // a hint telling the player to use /pcraft rent for now.
+                player.sendMessage(messages.getMessage("rental-usage", true));
+            }
             case "blackmarket_purchase" -> {
-                // Faz 1.0.0: Black market purchase
                 // value format: "recipeId:price"
                 if (value != null) {
                     String[] parts = value.split(":", 2);
@@ -128,7 +150,6 @@ public class CraftingListener implements Listener {
                     }
                 }
             }
-            // Faz 0.4.0: search + filter + sort
             case "search" -> {
                 // value = category (e.g. "rod" or "bait"), or "all"
                 gui.startSearchInput(player, value);
@@ -148,6 +169,41 @@ public class CraftingListener implements Listener {
             case "close" -> player.closeInventory();
             case "none" -> { /* informational item, do nothing */ }
             default -> { /* unknown action, ignore */ }
+        }
+    }
+
+    /**
+     * v1.1.0 — Generic pagination handler. Parses the menu-type / context /
+     * page-number triplet from the button's PDC value and dispatches to the
+     * matching openXMenu(player, page) method.
+     *
+     * <p>Value format: {@code "menuType:context:pageNumber"} where
+     * {@code context} may be empty (e.g. for non-category menus).</p>
+     */
+    private void handlePaginate(String action, Player player, String value) {
+        if (value == null) return;
+        // Split into 3 parts — the context itself may contain ':' for some
+        // menus (e.g. blackmarket uses recipeId:price in a different action,
+        // but never inside paginate_*). For paginate, context is either
+        // empty or a single segment (category id). Split with limit 3.
+        String[] parts = value.split(":", 3);
+        if (parts.length < 3) return;
+        String menuType = parts[0];
+        String context = parts[1];
+        int page;
+        try {
+            page = Integer.parseInt(parts[2]);
+        } catch (NumberFormatException ignored) {
+            return;
+        }
+        switch (menuType) {
+            case "category" -> gui.openCategoryMenu(player, context, page);
+            case "recipes" -> gui.openRecipesMenu(player, page);
+            case "achievements" -> gui.openAchievementsMenu(player, page);
+            case "blackmarket" -> gui.openBlackMarketMenu(player, page);
+            case "favorites" -> gui.openFavoritesMenu(player, page);
+            case "search" -> gui.openSearchPage(player, page);
+            default -> { /* unknown menu type, ignore */ }
         }
     }
 

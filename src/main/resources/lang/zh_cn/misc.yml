@@ -1,0 +1,14 @@
+# ============================================================
+# PhoenixCraft — Misc strings (简体中文)
+# ============================================================
+# Keys that don't yet belong to a specific domain. Split out as
+# the codebase grows.
+# ============================================================
+
+recipes-title: "<dark_gray>» <gold>已学配方 <dark_gray>(<white>%learned%/%total%</white>)"
+recipes-progress: "<gray>已学：<yellow>%learned%<dark_gray>/<white>%total%"
+discovery-first-craft: "<light_purple><bold>★ 首次发现！</bold></light_purple> <white>%recipe%</white> <dark_gray>(<aqua>+%xp% 奖励 XP</aqua>)"
+discovery-title: "<light_purple><bold>★ 新发现！</bold></light_purple>"
+discovery-subtitle: "<white>%recipe%</white> <dark_gray>(<aqua>+%xp% XP</aqua>)"
+discovery-already-discovered: "<gray>（已发现 — 无奖励 XP）"
+discovery-disabled: "<red>发现系统已禁用。"

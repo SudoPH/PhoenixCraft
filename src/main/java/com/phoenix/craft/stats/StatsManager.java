@@ -42,7 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatsManager {
 
     private final PhoenixCraft plugin;
-    private final boolean enabled;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isEnabled()}. */
+    private final boolean enabledAtBoot;
 
     /** In-memory stats cache, keyed by player UUID. */
     private final Map<UUID, PlayerStats> cache = new ConcurrentHashMap<>();
@@ -55,8 +57,8 @@ public class StatsManager {
 
     public StatsManager(PhoenixCraft plugin) {
         this.plugin = plugin;
-        this.enabled = plugin.getConfig().getBoolean("stats.enabled", true);
-        if (enabled) {
+        this.enabledAtBoot = plugin.getConfig().getBoolean("stats.enabled", true);
+        if (enabledAtBoot) {
             load();
             plugin.getLogger().info("StatsManager enabled — tracking " + cache.size() + " players.");
         } else {
@@ -64,8 +66,9 @@ public class StatsManager {
         }
     }
 
+    /** Live config read — picks up /pcraft reload changes immediately. */
     public boolean isEnabled() {
-        return enabled;
+        return plugin.getConfig().getBoolean("stats.enabled", true);
     }
 
     // =====================================================================
@@ -116,7 +119,7 @@ public class StatsManager {
      * a sync task (Bukkit YAML API is not thread-safe).
      */
     public synchronized void save() {
-        if (!enabled) return;
+        if (!isEnabled()) return;
         if (!dirty) return;
 
         File file = getStatsFile();
@@ -170,7 +173,7 @@ public class StatsManager {
      * @param xpAwarded total XP awarded
      */
     public void recordCraft(Player player, CraftRecipe recipe, int count, int xpAwarded) {
-        if (!enabled) return;
+        if (!isEnabled()) return;
 
         UUID uuid = player.getUniqueId();
         PlayerStats stats = cache.computeIfAbsent(uuid, k -> new PlayerStats());
@@ -196,7 +199,7 @@ public class StatsManager {
     // =====================================================================
 
     public PlayerStats getStats(UUID uuid) {
-        if (!enabled) return new PlayerStats();
+        if (!isEnabled()) return new PlayerStats();
         return cache.getOrDefault(uuid, new PlayerStats());
     }
 
@@ -207,7 +210,7 @@ public class StatsManager {
      * @return list of (uuid, totalCrafts) pairs, descending by totalCrafts
      */
     public List<Map.Entry<UUID, Integer>> getTopCrafters(int limit) {
-        if (!enabled) return Collections.emptyList();
+        if (!isEnabled()) return Collections.emptyList();
 
         // Faz 0.9.0: use cached leaderboard if available
         if (cachedLeaderboard != null) {

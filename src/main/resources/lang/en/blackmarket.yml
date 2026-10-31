@@ -1,0 +1,33 @@
+# ============================================================
+# PhoenixCraft — Black Market strings (English)
+# ============================================================
+# Stock listing, purchase flow, refresh announcements, time-remaining.
+# MiniMessage tags supported. Placeholders: %recipe% %price% %balance%
+# %time% %count% %limit% %minutes% %hours%
+# ============================================================
+
+blackmarket-title: "<dark_gray>» <dark_red><bold>BLACK MARKET</bold></dark_red> <dark_gray>(refreshes in %time%)"
+blackmarket-empty: "<red>The black market is currently empty. Next refresh in %time%."
+blackmarket-item-name: "<dark_red>%recipe%"
+blackmarket-item-lore-1: "<gray>Price: <gold>$%price%"
+blackmarket-item-lore-balance: "<gray>Your balance: <green>$%balance%"
+blackmarket-item-affordable: "<green><bold>✔ You can afford this</bold>"
+blackmarket-item-not-affordable: "<red><bold>✖ Insufficient balance</bold>"
+blackmarket-item-learned: "<dark_gray><italic>You already learned this recipe — buying it is pointless."
+blackmarket-item-already-bought: "<yellow><italic>Already bought this cycle (%count%/%limit%)."
+blackmarket-item-lore-2: "<dark_gray>Click to purchase."
+blackmarket-item-lore-3: "<dark_red>Limited stock!"
+blackmarket-purchase-success: "<green>✔ Purchased <white>%recipe%</white> recipe book for <gold>$%price%</gold>!"
+blackmarket-purchase-insufficient-funds: "<red>Insufficient funds! Need <yellow>$%price%</yellow>, have $%balance%"
+blackmarket-purchase-already-bought: "<red>You already bought a recipe this refresh cycle."
+blackmarket-purchase-already-learned: "<red>You already know this recipe."
+blackmarket-purchase-sold-out: "<red>This recipe has been sold out."
+blackmarket-refresh-announce: "<dark_gray>[<dark_red>BLACK MARKET</dark_red>] <gray>New stock available! Use <yellow>/pcraft blackmarket</yellow> to browse."
+blackmarket-refreshed: "<green>✔ Black market refreshed with %count% new recipes."
+blackmarket-refresh-disabled: "<red>The black market is disabled."
+blackmarket-refresh-manual-only: "<gray>Black market is set to manual refresh only."
+blackmarket-no-permission: "<red>You don't have permission to refresh the black market."
+blackmarket-next-refresh: "<gray>Next refresh in: <yellow>%time%"
+blackmarket-time-minutes: "%count%m"
+blackmarket-time-hours: "%count%h %minutes%m"
+blackmarket-time-expired: "<red>expired"

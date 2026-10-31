@@ -31,7 +31,9 @@ public class RentalManager {
     private final PhoenixCraft plugin;
     private final PhoenixFishAPI fishApi;
     private final MessageManager messages;
-    private final boolean enabled;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isEnabled()}. */
+    private final boolean enabledAtBoot;
 
     private final Map<UUID, RentalOffer> offers = new ConcurrentHashMap<>();
     private final Map<UUID, List<Rental>> rentals = new ConcurrentHashMap<>();
@@ -42,9 +44,9 @@ public class RentalManager {
         this.plugin = plugin;
         this.fishApi = fishApi;
         this.messages = messages;
-        this.enabled = plugin.getConfig().getBoolean("recipe-rental.enabled", false);
+        this.enabledAtBoot = plugin.getConfig().getBoolean("recipe-rental.enabled", false);
 
-        if (enabled) {
+        if (enabledAtBoot) {
             load();
             startExpiryChecker();
             plugin.getLogger().info("RentalManager enabled — "
@@ -55,8 +57,9 @@ public class RentalManager {
         }
     }
 
+    /** Live config read — picks up /pcraft reload changes immediately. */
     public boolean isEnabled() {
-        return enabled;
+        return plugin.getConfig().getBoolean("recipe-rental.enabled", false);
     }
 
     public static class RentalOffer {
@@ -161,7 +164,7 @@ public class RentalManager {
     }
 
     public synchronized void save() {
-        if (!enabled || !dirty) return;
+        if (!isEnabled() || !dirty) return;
         File file = getFile();
         FileConfiguration cfg = new YamlConfiguration();
 
@@ -205,7 +208,7 @@ public class RentalManager {
     // =====================================================================
 
     public String createOffer(Player owner, String recipeId, double price, int durationMinutes) {
-        if (!enabled) return "rental-disabled";
+        if (!isEnabled()) return "rental-disabled";
 
         int maxDur = plugin.getConfig().getInt("recipe-rental.max-duration-minutes", 60);
         int minDur = plugin.getConfig().getInt("recipe-rental.min-duration-minutes", 5);
@@ -235,7 +238,7 @@ public class RentalManager {
     }
 
     public String acceptOffer(Player renter, UUID ownerUuid, String recipeId) {
-        if (!enabled) return "rental-disabled";
+        if (!isEnabled()) return "rental-disabled";
 
         RentalOffer found = null;
         for (RentalOffer o : offers.values()) {
@@ -282,7 +285,7 @@ public class RentalManager {
     }
 
     public String cancelOffer(Player owner, String recipeId) {
-        if (!enabled) return "rental-disabled";
+        if (!isEnabled()) return "rental-disabled";
         UUID toRemove = null;
         for (RentalOffer o : offers.values()) {
             if (o.ownerUuid.equals(owner.getUniqueId())

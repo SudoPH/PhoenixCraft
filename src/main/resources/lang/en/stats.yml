@@ -1,0 +1,21 @@
+# ============================================================
+# PhoenixCraft — Stats & Leaderboard strings (English)
+# ============================================================
+# Per-player stats menu, leaderboard lines, time-ago formatters.
+# MiniMessage tags supported. Placeholders: %count% %xp% %time%
+# %rank% %player% %balance% %n%
+# ============================================================
+
+stats-title: "<dark_gray>» <aqua>Crafting Stats"
+stats-total-crafts: "<gray>Total Crafts: <white>%count%"
+stats-total-xp: "<gray>Total XP Earned: <aqua>%xp%"
+stats-unique-recipes: "<gray>Unique Recipes Crafted: <white>%count%"
+stats-first-craft: "<gray>First Craft: <white>%time%"
+stats-last-craft: "<gray>Last Craft: <white>%time%"
+stats-balance: "<gray>Balance: <green>$%balance%"
+stats-leaderboard-header: "<gold><bold>Server Top %n%"
+stats-leaderboard-line: "<yellow>%rank%. <white>%player% <dark_gray>— <aqua>%count% crafts"
+stats-leaderboard-empty: "<gray>No crafts recorded yet."
+stats-disabled-name: "<red><bold>Stats Disabled"
+stats-disabled-lore: "<gray>The stats system is disabled in config.yml."
+stats-disabled-message: "<red>The stats system is disabled."

@@ -1,0 +1,17 @@
+# ============================================================
+# PhoenixCraft — Misc strings (English)
+# ============================================================
+# Keys that don't yet belong to a specific domain. Split out as
+# the codebase grows.
+# ============================================================
+
+crafting-level-up: "<gold>Your crafting level increased! New Level: %level%</gold>"
+crafting-level-up-title: "<gold><bold>CRAFTING LEVEL UP!</bold></gold>"
+crafting-level-up-subtitle: "<white>New Level: <yellow>%level%</yellow></white>"
+recipes-title: "<dark_gray>» <gold>Learned Recipes <dark_gray>(<white>%learned%/%total%</white>)"
+recipes-progress: "<gray>Learned: <yellow>%learned%<dark_gray>/<white>%total%"
+discovery-first-craft: "<light_purple><bold>★ FIRST DISCOVERY!</bold></light_purple> <white>%recipe%</white> <dark_gray>(<aqua>+%xp% bonus XP</aqua>)"
+discovery-title: "<light_purple><bold>★ NEW DISCOVERY!</bold></light_purple>"
+discovery-subtitle: "<white>%recipe%</white> <dark_gray>(<aqua>+%xp% XP</aqua>)"
+discovery-already-discovered: "<gray>(already discovered — no bonus XP)"
+discovery-disabled: "<red>The discovery system is disabled."

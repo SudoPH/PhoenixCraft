@@ -1,0 +1,32 @@
+# ============================================================
+# PhoenixCraft — Recipe Rental strings (English)
+# ============================================================
+# Offer / accept / list / cancel / expiry flows.
+# MiniMessage tags supported. Placeholders: %recipe% %price% %minutes%
+# %player% %owner% %balance% %min% %max%
+# ============================================================
+
+rental-usage: "<yellow>Usage: /pcraft rent <offer|accept|list|cancel> ..."
+rental-disabled: "<red>Recipe rental is disabled."
+rental-offer-usage: "<yellow>Usage: /pcraft rent offer <recipe-id> <price> <minutes>"
+rental-offer-success: "<green>✔ Rental offer created: <white>%recipe%</white> for <gold>$%price%</gold> / <yellow>%minutes%min</yellow>"
+rental-offer-not-learned: "<red>You can't offer a recipe you haven't learned."
+rental-offer-too-many: "<red>You have too many active offers (max %max%)."
+rental-offer-invalid-duration: "<red>Duration must be between %min% and %max% minutes."
+rental-offer-invalid-price: "<red>Price must be between $%min% and $%max%."
+rental-accept-usage: "<yellow>Usage: /pcraft rent accept <player> <recipe-id>"
+rental-accept-not-found: "<red>No active offer from <yellow>%player%</yellow> for <yellow>%recipe%</yellow>."
+rental-accept-insufficient-funds: "<red>Insufficient funds! Need <yellow>$%price%</yellow>, have $%balance%"
+rental-accept-too-many: "<red>You have too many active rentals (max %max%)."
+rental-accept-success: "<green>✔ Rented <white>%recipe%</white> from <yellow>%owner%</yellow> for <gold>$%price%</gold> / <yellow>%minutes%min</yellow>"
+rental-accept-owner-notify: "<green>✔ <yellow>%player%</yellow> rented your <white>%recipe%</white> for <gold>$%price%</gold>."
+rental-list-header: "<gold><bold>Active Rental Offers"
+rental-list-line: "<yellow>%player% <gray>— <white>%recipe% <dark_gray>| <gold>$%price% <dark_gray>| <yellow>%minutes%min"
+rental-list-empty: "<gray>No active rental offers."
+rental-cancel-usage: "<yellow>Usage: /pcraft rent cancel <recipe-id>"
+rental-cancel-success: "<green>✔ Cancelled rental offer for <white>%recipe%</white>."
+rental-cancel-not-found: "<red>You have no active offer for <yellow>%recipe%</yellow>."
+rental-expired: "<red>Your rental for <white>%recipe%</white> has expired."
+rental-fee-charged: "<dark_gray>Transaction fee: <red>-$%fee%"
+rental-list-title: "<dark_gray>» <gold>Rental Offers"
+rental-my-rentals-title: "<dark_gray>» <gold>My Active Rentals"

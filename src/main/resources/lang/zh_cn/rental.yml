@@ -1,0 +1,32 @@
+# ============================================================
+# PhoenixCraft — Recipe Rental strings (简体中文)
+# ============================================================
+# Offer / accept / list / cancel / expiry flows.
+# MiniMessage tags supported. Placeholders: %recipe% %price% %minutes%
+# %player% %owner% %balance% %min% %max%
+# ============================================================
+
+rental-usage: "<yellow>用法：/pcraft rent <offer|accept|list|cancel> ..."
+rental-disabled: "<red>配方租借已禁用。"
+rental-offer-usage: "<yellow>用法：/pcraft rent offer <配方-id> <价格> <分钟>"
+rental-offer-success: "<green>✔ 租借提议已创建：<white>%recipe%</white> — <gold>$%price%</gold> / <yellow>%minutes%分钟</yellow>"
+rental-offer-not-learned: "<red>你不能租出你还没学过的配方。"
+rental-offer-too-many: "<red>你有太多活跃提议（最多 %max%）。"
+rental-offer-invalid-duration: "<red>时长必须在 %min% 到 %max% 分钟之间。"
+rental-offer-invalid-price: "<red>价格必须在 $%min% 到 $%max% 之间。"
+rental-accept-usage: "<yellow>用法：/pcraft rent accept <玩家> <配方-id>"
+rental-accept-not-found: "<red><yellow>%player%</yellow> 对 <yellow>%recipe%</yellow> 没有活跃提议。"
+rental-accept-insufficient-funds: "<red>余额不足！需要：<yellow>$%price%</yellow>，现有：$%balance%"
+rental-accept-too-many: "<red>你有太多活跃租借（最多 %max%）。"
+rental-accept-success: "<green>✔ 从 <yellow>%owner%</yellow> 租借了 <white>%recipe%</white> — <gold>$%price%</gold> / <yellow>%minutes%分钟</yellow>"
+rental-accept-owner-notify: "<green>✔ <yellow>%player%</yellow> 以 <gold>$%price%</gold> 租借了你的 <white>%recipe%</white>。"
+rental-list-header: "<gold><bold>活跃租借提议"
+rental-list-line: "<yellow>%player% <gray>— <white>%recipe% <dark_gray>| <gold>$%price% <dark_gray>| <yellow>%minutes%分钟"
+rental-list-empty: "<gray>暂无活跃租借提议。"
+rental-cancel-usage: "<yellow>用法：/pcraft rent cancel <配方-id>"
+rental-cancel-success: "<green>✔ <white>%recipe%</white> 的租借提议已取消。"
+rental-cancel-not-found: "<red><yellow>%recipe%</yellow> 没有活跃提议。"
+rental-expired: "<red>你的 <white>%recipe%</white> 租借已过期。"
+rental-fee-charged: "<dark_gray>交易手续费：<red>-$%fee%"
+rental-list-title: "<dark_gray>» <gold>租借提议"
+rental-my-rentals-title: "<dark_gray>» <gold>我的活跃租借"

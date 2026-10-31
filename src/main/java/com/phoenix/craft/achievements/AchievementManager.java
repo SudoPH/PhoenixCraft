@@ -58,7 +58,9 @@ public class AchievementManager {
     private final PhoenixCraft plugin;
     private final StatsManager statsManager;
     private final MessageManager messages;
-    private final boolean enabled;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isEnabled()}. */
+    private final boolean enabledAtBoot;
 
     private final Map<String, Achievement> achievements = new LinkedHashMap<>();
     private final Map<UUID, Set<String>> unlocked = new ConcurrentHashMap<>();
@@ -69,9 +71,9 @@ public class AchievementManager {
         this.plugin = plugin;
         this.statsManager = statsManager;
         this.messages = messages;
-        this.enabled = plugin.getConfig().getBoolean("achievements.enabled", true);
+        this.enabledAtBoot = plugin.getConfig().getBoolean("achievements.enabled", true);
 
-        if (enabled) {
+        if (enabledAtBoot) {
             loadDefinitions();
             loadUnlocks();
             plugin.getLogger().info("AchievementManager enabled — "
@@ -82,8 +84,9 @@ public class AchievementManager {
         }
     }
 
+    /** Live config read — picks up /pcraft reload changes immediately. */
     public boolean isEnabled() {
-        return enabled;
+        return plugin.getConfig().getBoolean("achievements.enabled", true);
     }
 
     public Map<String, Achievement> getAchievements() {
@@ -107,19 +110,41 @@ public class AchievementManager {
 
         // 2. Load custom achievements from custom-achievements.yml
         //    (overrides config.yml if same ID exists)
-        File customFile = new File(plugin.getDataFolder(), "custom-achievements.yml");
-        if (!customFile.exists()) {
-            plugin.saveResource("custom-achievements.yml", false);
+        //    v1.0.1 — Dil bazlı dosya yükleme: custom-achievements_<dil>.yml → custom-achievements.yml
+        String lang = null;
+        try {
+            lang = plugin.getMessageManager().getLanguage();
+        } catch (Throwable ignored) {
+            // MessageManager henüz yüklenmediyse null bırak.
         }
+        String customFileName = "custom-achievements.yml";
+        if (lang != null && !lang.trim().isEmpty() && !lang.equalsIgnoreCase("en")) {
+            String candidate = "custom-achievements_" + lang.trim().toLowerCase() + ".yml";
+            File candidateFile = new File(plugin.getDataFolder(), candidate);
+            if (candidateFile.exists() || plugin.getResource(candidate) != null) {
+                customFileName = candidate;
+            }
+        }
+        File customFile = new File(plugin.getDataFolder(), customFileName);
+        if (!customFile.exists()) {
+            // Fallback: custom-achievements.yml
+            customFileName = "custom-achievements.yml";
+            customFile = new File(plugin.getDataFolder(), "custom-achievements.yml");
+            if (!customFile.exists()) {
+                plugin.saveResource("custom-achievements.yml", false);
+                customFile = new File(plugin.getDataFolder(), "custom-achievements.yml");
+            }
+        }
+        plugin.getLogger().info("Loading custom achievements from: " + customFileName);
         if (customFile.exists()) {
             FileConfiguration customCfg = YamlConfiguration.loadConfiguration(customFile);
             ConfigurationSection customList = customCfg.getConfigurationSection("list");
             if (customList != null) {
                 int beforeSize = achievements.size();
-                loadAchievementsFromSection(customList, "custom-achievements.yml");
+                loadAchievementsFromSection(customList, customFileName);
                 int added = achievements.size() - beforeSize;
                 if (added > 0) {
-                    plugin.getLogger().info("Loaded " + added + " custom achievements from custom-achievements.yml");
+                    plugin.getLogger().info("Loaded " + added + " custom achievements from " + customFileName);
                 }
             }
         }
@@ -219,7 +244,7 @@ public class AchievementManager {
     }
 
     public synchronized void saveUnlocks() {
-        if (!enabled || !dirty) return;
+        if (!isEnabled() || !dirty) return;
         File file = getUnlocksFile();
         FileConfiguration cfg = new YamlConfiguration();
         for (Map.Entry<UUID, Set<String>> entry : unlocked.entrySet()) {
@@ -242,18 +267,18 @@ public class AchievementManager {
     // =====================================================================
 
     public boolean isUnlocked(UUID uuid, String achievementId) {
-        if (!enabled) return false;
+        if (!isEnabled()) return false;
         Set<String> set = unlocked.get(uuid);
         return set != null && set.contains(achievementId);
     }
 
     public Set<String> getUnlocked(UUID uuid) {
-        if (!enabled) return Collections.emptySet();
+        if (!isEnabled()) return Collections.emptySet();
         return Collections.unmodifiableSet(unlocked.getOrDefault(uuid, Collections.emptySet()));
     }
 
     public int getUnlockedCount(UUID uuid) {
-        if (!enabled) return 0;
+        if (!isEnabled()) return 0;
         Set<String> set = unlocked.get(uuid);
         return set != null ? set.size() : 0;
     }
@@ -274,7 +299,7 @@ public class AchievementManager {
      * this returns 47.
      */
     public int getCurrentProgress(UUID uuid, Achievement ach) {
-        if (!enabled || statsManager == null) return -1;
+        if (!isEnabled() || statsManager == null) return -1;
         StatsManager.PlayerStats stats = statsManager.getStats(uuid);
 
         switch (ach.type) {
@@ -360,7 +385,7 @@ public class AchievementManager {
     // =====================================================================
 
     public void checkAchievements(Player player, CraftRecipe recipe, int craftedCount) {
-        if (!enabled) return;
+        if (!isEnabled()) return;
 
         UUID uuid = player.getUniqueId();
         StatsManager.PlayerStats stats = statsManager.getStats(uuid);

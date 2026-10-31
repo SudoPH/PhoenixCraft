@@ -3,8 +3,10 @@ package com.phoenix.craft.gui;
 import com.phoenix.craft.PhoenixCraft;
 import com.phoenix.craft.achievements.AchievementManager;
 import com.phoenix.craft.blackmarket.BlackMarketManager;
+import com.phoenix.craft.config.FeatureFlags;
 import com.phoenix.craft.discovery.DiscoveryManager;
 import com.phoenix.craft.economy.EconomyManager;
+import com.phoenix.craft.favorites.FavoritesManager;
 import com.phoenix.craft.recipes.RecipeManager;
 import com.phoenix.craft.stats.StatsManager;
 import com.phoenix.craft.util.MessageManager;
@@ -22,8 +24,10 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -71,6 +75,7 @@ public class CraftingGUIManager {
     private final RecipeManager recipeManager;
     private final DiscoveryManager discoveryManager;
     private final BlackMarketManager blackMarketManager;
+    private final FavoritesManager favoritesManager;
 
     private final NamespacedKey actionKey;
     private final NamespacedKey valueKey;
@@ -91,7 +96,8 @@ public class CraftingGUIManager {
     public CraftingGUIManager(PhoenixCraft plugin, PhoenixFishAPI fishApi, MessageManager messages,
                                StatsManager statsManager, AchievementManager achievementManager,
                                EconomyManager economyManager, RecipeManager recipeManager,
-                               DiscoveryManager discoveryManager, BlackMarketManager blackMarketManager) {
+                               DiscoveryManager discoveryManager, BlackMarketManager blackMarketManager,
+                               FavoritesManager favoritesManager) {
         this.plugin = plugin;
         this.fishApi = fishApi;
         this.messages = messages;
@@ -102,8 +108,101 @@ public class CraftingGUIManager {
         this.recipeManager = recipeManager;
         this.discoveryManager = discoveryManager;
         this.blackMarketManager = blackMarketManager;
+        this.favoritesManager = favoritesManager;
         this.actionKey = new NamespacedKey(plugin, "craft_action");
         this.valueKey = new NamespacedKey(plugin, "craft_value");
+
+        // ─── v1.2.0 — Load slot indexes from config.yml ───
+        // Every value has a hardcoded default fallback so a missing or
+        // malformed `gui.slots:` section never crashes the plugin.
+        this.contentSlots = loadContentSlots();
+        this.contentSlotsPerPage = contentSlots.length;
+        this.slotInfoLeft    = loadSlot("gui.slots.info-left",    DEFAULT_SLOT_INFO_LEFT);
+        this.slotPrevPage    = loadSlot("gui.slots.prev-page",    DEFAULT_SLOT_PREV_PAGE);
+        this.slotSearch      = loadSlot("gui.slots.search",       DEFAULT_SLOT_SEARCH);
+        this.slotFilter      = loadSlot("gui.slots.filter",       DEFAULT_SLOT_FILTER);
+        this.slotBackClose   = loadSlot("gui.slots.back-close",   DEFAULT_SLOT_BACK_CLOSE);
+        this.slotSort        = loadSlot("gui.slots.sort",         DEFAULT_SLOT_SORT);
+        this.slotFavorite    = loadSlot("gui.slots.favorite",     DEFAULT_SLOT_FAVORITE);
+        this.slotNextPage    = loadSlot("gui.slots.next-page",    DEFAULT_SLOT_NEXT_PAGE);
+        this.slotInfoRight   = loadSlot("gui.slots.info-right",   DEFAULT_SLOT_INFO_RIGHT);
+        this.slotResultPreview    = loadSlot("gui.recipe-detail.slots.result-preview",   13);
+        this.slotIngredientsList  = loadSlot("gui.recipe-detail.slots.ingredients-list", 11);
+        this.slotCraftSingle      = loadSlot("gui.recipe-detail.slots.craft-single",     14);
+        this.slotCraftClose       = loadSlot("gui.recipe-detail.slots.craft-close",      15);
+        this.slotCraftMax         = loadSlot("gui.recipe-detail.slots.craft-max",        22);
+
+        // Log the resolved layout so admins can verify their config took effect.
+        plugin.getLogger().info("GUI layout loaded: " + contentSlotsPerPage + " content slots, "
+                + "action-bar=[" + slotPrevPage + "◀," + slotSearch + "🔍,"
+                + slotFilter + "FilterWhere," + slotBackClose + "✖,"
+                + slotSort + "SortWhere," + slotFavorite + "★,"
+                + slotNextPage + "▶]");
+    }
+
+    /**
+     * Read a single slot index from config.yml with validation.
+     * Falls back to {@code def} if the value is missing, out of [0,53]
+     * range, or the config read throws.
+     *
+     * @since v1.2.0
+     */
+    private int loadSlot(String path, int def) {
+        try {
+            int v = plugin.getConfig().getInt(path, def);
+            if (v < 0 || v > 53) {
+                plugin.getLogger().warning("Slot '" + path + "'=" + v
+                        + " is out of range [0,53] — using default " + def + ".");
+                return def;
+            }
+            return v;
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Failed reading slot '" + path + "': "
+                    + t.getMessage() + " — using default " + def + ".");
+            return def;
+        }
+    }
+
+    /**
+     * Read the content-slot list from config.yml with full validation.
+     * Skips out-of-range slots, deduplicates, and caps at 28 entries.
+     * Falls back to {@link #DEFAULT_CONTENT_SLOTS} if anything goes wrong.
+     *
+     * @since v1.2.0
+     */
+    private int[] loadContentSlots() {
+        try {
+            java.util.List<Integer> raw = plugin.getConfig().getIntegerList("gui.slots.content-slots");
+            if (raw == null || raw.isEmpty()) return DEFAULT_CONTENT_SLOTS.clone();
+            java.util.List<Integer> cleaned = new java.util.ArrayList<>();
+            for (Integer s : raw) {
+                if (s == null) continue;
+                if (s < 0 || s > 53) {
+                    plugin.getLogger().warning("Content slot " + s + " out of range [0,53] — skipped.");
+                    continue;
+                }
+                if (cleaned.contains(s)) {
+                    plugin.getLogger().warning("Duplicate content slot " + s + " — skipped.");
+                    continue;
+                }
+                cleaned.add(s);
+                if (cleaned.size() >= 28) {
+                    plugin.getLogger().warning("Content slot list capped at 28 entries — extras ignored.");
+                    break;
+                }
+            }
+            if (cleaned.isEmpty()) {
+                plugin.getLogger().warning("gui.slots.content-slots is empty — using default layout.");
+                return DEFAULT_CONTENT_SLOTS.clone();
+            }
+            int[] result = new int[cleaned.size()];
+            for (int i = 0; i < cleaned.size(); i++) result[i] = cleaned.get(i);
+            return result;
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Failed loading content-slots: "
+                    + t.getMessage() + " — using default layout.");
+            return DEFAULT_CONTENT_SLOTS.clone();
+        }
     }
 
     public NamespacedKey getActionKey() {
@@ -115,15 +214,374 @@ public class CraftingGUIManager {
     }
 
     private long getCraftCooldownMs() {
-        return plugin.getConfig().getLong("settings.craft-cooldown-ms", 150L);
+        // v1.2.0 — try the new crafting-modifiers section first, fall back to
+        // the legacy settings.craft-cooldown-ms key, then to the hardcoded default.
+        try {
+            long v = plugin.getConfig().getLong("crafting-modifiers.craft-cooldown-ms",
+                    plugin.getConfig().getLong("settings.craft-cooldown-ms", 150L));
+            return Math.max(0, v);
+        } catch (Throwable t) {
+            return 150L;
+        }
     }
 
     private int getBulkCraftCap() {
-        return plugin.getConfig().getInt("settings.bulk-craft-cap", 1000);
+        // v1.2.0 — try crafting-modifiers.bulk-craft-cap → settings.bulk-craft-cap → default.
+        try {
+            int v = plugin.getConfig().getInt("crafting-modifiers.bulk-craft-cap",
+                    plugin.getConfig().getInt("settings.bulk-craft-cap", 1000));
+            return Math.max(1, v);
+        } catch (Throwable t) {
+            return 1000;
+        }
     }
 
     private int getItemsPerPage() {
-        return plugin.getConfig().getInt("pagination.items-per-page", 45);
+        int configured = plugin.getConfig().getInt("pagination.items-per-page", contentSlotsPerPage);
+        return Math.max(1, Math.min(configured, contentSlotsPerPage));
+    }
+
+    // =====================================================================
+    //  LAYOUT CONSTANTS — strict 54-slot blueprint (single source of truth)
+    // =====================================================================
+    //  v1.1.0 — Standardized Row 6 navigation across EVERY menu:
+    //
+    //    Slot 45: info / decoration         (GRAY pane on menus without info)
+    //    Slot 46: ◀ PREVIOUS PAGE           (ARROW or GRAY pane if disabled)
+    //    Slot 47: SEARCH                    (category menus only)
+    //    Slot 48: FILTER                    (category menus only)
+    //    Slot 49: ✖ CLOSE / BACK BARRIER    (always — centre, never moves)
+    //    Slot 50: SORT                      (category menus only)
+    //    Slot 51: ★ FAVORITE STAR           (toggle on detail; opens favorites
+    //                                        GUI from main menu / list menus)
+    //    Slot 52: ▶ NEXT PAGE               (ARROW or GRAY pane if disabled)
+    //    Slot 53: refresh / decoration      (GRAY pane on menus without refresh)
+    //
+    //  Row 1 (0-8):   Outer border — GRAY Stained Glass (always)
+    //  Rows 2-5:      Content area — 4 rows × 7 columns = 28 slots
+    //                 (slots 10-43, skipping the left/right GRAY columns)
+    //                 The remaining border-column slots on rows 2-5 are
+    //                 filled with BLACK Stained Glass padding so there
+    //                 are NO stray/floating items anywhere in the GUI.
+    //  Row 6 (45-53): Action bar — see above.
+    // =====================================================================
+    //  v1.2.0 — Slot indexes are now CONFIG-DRIVEN via the `gui.slots`
+    //  section in config.yml. The static finals below are DEFAULTS used
+    //  only when the config is missing/malformed. At construction time
+    //  the manager reads the config and populates the instance fields
+    //  (contentSlots, slotPrevPage, slotNextPage, etc.) — all rendering
+    //  code uses the instance fields, never the static finals directly.
+    // =====================================================================
+    private static final int[] DEFAULT_CONTENT_SLOTS = {
+        10, 11, 12, 13, 14, 15, 16,
+        19, 20, 21, 22, 23, 24, 25,
+        28, 29, 30, 31, 32, 33, 34,
+        37, 38, 39, 40, 41, 42, 43
+    };
+    private static final int DEFAULT_SLOT_INFO_LEFT  = 45;
+    private static final int DEFAULT_SLOT_PREV_PAGE  = 46;
+    private static final int DEFAULT_SLOT_SEARCH     = 47;
+    private static final int DEFAULT_SLOT_FILTER     = 48;
+    private static final int DEFAULT_SLOT_BACK_CLOSE = 49;
+    private static final int DEFAULT_SLOT_SORT       = 50;
+    private static final int DEFAULT_SLOT_FAVORITE   = 51;
+    private static final int DEFAULT_SLOT_NEXT_PAGE  = 52;
+    private static final int DEFAULT_SLOT_INFO_RIGHT = 53;
+
+    // ─── Instance fields — populated from config.yml at construction ───
+    private final int[] contentSlots;
+    private final int contentSlotsPerPage;
+    private final int slotInfoLeft;
+    private final int slotPrevPage;
+    private final int slotSearch;
+    private final int slotFilter;
+    private final int slotBackClose;
+    private final int slotSort;
+    private final int slotFavorite;
+    private final int slotNextPage;
+    private final int slotInfoRight;
+
+    // Recipe-detail slots — also config-driven
+    private final int slotResultPreview;
+    private final int slotIngredientsList;
+    private final int slotCraftSingle;
+    private final int slotCraftClose;
+    private final int slotCraftMax;
+
+    // ─── Border + padding materials (defaults; the actual values come from
+    //     gui.outer-border / gui.inner-padding in config.yml, read lazily by
+    //     fillChrome54 at render time so a /pcraft reload picks them up) ───
+    private static final String DEFAULT_OUTER_BORDER = "GRAY_STAINED_GLASS_PANE";
+    private static final String DEFAULT_INNER_PADDING = "BLACK_STAINED_GLASS_PANE";
+
+    // ─── Menu-type identifiers used by the generic pagination helpers ───
+    //   These are encoded into button PDC values so the listener knows
+    //   which openXMenu(...) method to call when the arrow is clicked.
+    public static final String MENU_CATEGORY     = "category";
+    public static final String MENU_RECIPES      = "recipes";
+    public static final String MENU_ACHIEVEMENTS = "achievements";
+    public static final String MENU_BLACKMARKET  = "blackmarket";
+    public static final String MENU_SEARCH       = "search";
+    public static final String MENU_FAVORITES    = "favorites";
+
+    private int populateContent(Inventory inv, List<ItemStack> items) {
+        int placed = 0;
+        for (int i = 0; i < contentSlots.length && i < items.size(); i++) {
+            ItemStack item = items.get(i);
+            if (item == null) continue;
+            inv.setItem(contentSlots[i], item);
+            placed++;
+        }
+        return placed;
+    }
+
+    /**
+     * Fill the standardized 54-slot chrome:
+     *   • Row 1 (0-8):      outer GRAY border
+     *   • Rows 2-5 cols 0/8: outer GRAY border (left + right edges)
+     *   • Rows 2-5 cols 1-7: inner BLACK padding — INCLUDING unused content
+     *     slots, so the GUI never has empty/null slots that look "spilled".
+     *   • Row 6 (45-53):    outer GRAY border (action-bar slots overlay this)
+     *
+     * <p>v1.1.1 — CRITICAL FIX: Previously this method skipped content slots
+     * (10-43), leaving them as null ItemStacks when the caller didn't place
+     * an icon there. That made the main menu look like items were "spilling
+     * into padding rows" because half the content area was empty. Now we
+     * fill EVERY non-action-bar slot — the caller overwrites the ones they
+     * want with icons, and the rest stay as clean BLACK padding.</p>
+     *
+     * <p>Action-bar slots (45-53) are still reserved for the caller —
+     * {@link #renderActionBar54} fills them explicitly.</p>
+     */
+    private void fillChrome54(Inventory inv) {
+        Material outerMat = parseMaterial(
+                plugin.getConfig().getString("gui.outer-border", DEFAULT_OUTER_BORDER),
+                Material.GRAY_STAINED_GLASS_PANE);
+        Material innerMat = parseMaterial(
+                plugin.getConfig().getString("gui.inner-padding", DEFAULT_INNER_PADDING),
+                Material.BLACK_STAINED_GLASS_PANE);
+
+        ItemStack outer = borderPane(outerMat);
+        ItemStack inner = borderPane(innerMat);
+
+        // Action-bar slots are reserved — renderActionBar54 fills them.
+        // Everything else (border + content area) gets a pane here; the
+        // caller overwrites specific content slots with icons afterwards.
+        boolean[] isActionBar = new boolean[54];
+        int[] actionBar = {slotInfoLeft, slotPrevPage, slotSearch, slotFilter,
+                slotBackClose, slotSort, slotFavorite, slotNextPage, slotInfoRight};
+        for (int s : actionBar) isActionBar[s] = true;
+
+        for (int i = 0; i < 54; i++) {
+            if (isActionBar[i]) continue; // renderActionBar54 fills these
+            int row = i / 9;
+            int col = i % 9;
+            // Outer border = top row, bottom row, left col, right col.
+            // Inner padding = everything else (including unused content slots).
+            if (row == 0 || row == 5 || col == 0 || col == 8) {
+                inv.setItem(i, outer);
+            } else {
+                inv.setItem(i, inner);
+            }
+        }
+    }
+
+    /**
+     * Build a "blank" glass pane for borders/padding — empty name, no lore,
+     * HIDE_ENCHANTS + HIDE_ATTRIBUTES so it shows no tooltip at all.
+     */
+    private ItemStack borderPane(Material mat) {
+        ItemStack pane = new ItemStack(mat);
+        ItemMeta meta = pane.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.empty());
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES,
+                    ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "none");
+            meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
+            pane.setItemMeta(meta);
+        }
+        return pane;
+    }
+
+    /**
+     * Generic previous-page button. The {@code menuType} tells the listener
+     * which menu to reopen, and {@code context} carries any extra info
+     * needed (e.g. category id for category menus, search query for search).
+     *
+     * <p>PDC value format: {@code menuType:context:pageNumber}. The listener
+     * splits on ":" and dispatches to the right open method.</p>
+     */
+    private ItemStack buildPrevPageButton(String menuType, String context,
+                                            int currentPage, int totalPages) {
+        // Always render — keeps the action bar symmetric on page 1/1
+        if (currentPage > 0) {
+            String arrowMat = plugin.getConfig().getString("gui.buttons.prev-page", "ARROW");
+            return createButton(parseMaterial(arrowMat, Material.ARROW),
+                    "category-prev-page", List.of(),
+                    "paginate_prev", menuType + ":" + (context == null ? "" : context) + ":" + (currentPage - 1));
+        }
+        String disabledMat = plugin.getConfig().getString("gui.buttons.page-disabled", "GRAY_STAINED_GLASS_PANE");
+        return createButton(parseMaterial(disabledMat, Material.GRAY_STAINED_GLASS_PANE),
+                "category-prev-page-disabled", List.of(),
+                "none", "none");
+    }
+
+    private ItemStack buildNextPageButton(String menuType, String context,
+                                            int currentPage, int totalPages) {
+        if (currentPage < totalPages - 1) {
+            String arrowMat = plugin.getConfig().getString("gui.buttons.next-page", "ARROW");
+            return createButton(parseMaterial(arrowMat, Material.ARROW),
+                    "category-next-page", List.of(),
+                    "paginate_next", menuType + ":" + (context == null ? "" : context) + ":" + (currentPage + 1));
+        }
+        String disabledMat = plugin.getConfig().getString("gui.buttons.page-disabled", "GRAY_STAINED_GLASS_PANE");
+        return createButton(parseMaterial(disabledMat, Material.GRAY_STAINED_GLASS_PANE),
+                "category-next-page-disabled", List.of(),
+                "none", "none");
+    }
+
+    /**
+     * Render the standardized action bar (Row 6) into a 54-slot inventory.
+     * Caller passes in the menu-type + context so pagination arrows know
+     * where to go, plus optional flags for whether search/filter/sort/fav
+     * buttons should be shown (some menus don't have those concepts).
+     *
+     * <p>v1.1.0: Honors the {@code features.gui.*} sub-flags from config.yml.
+     * If a flag is false, the corresponding button is replaced with a black
+     * padding pane — no tooltip, no click handler.</p>
+     *
+     * <p>v1.1.1: New {@code showSearchOnly} flag for the main dashboard —
+     * renders ONLY the Search button at slot 47 (no Filter/Sort). This locks
+     * Search into the action bar per the user's spec, instead of letting it
+     * float in the content area.</p>
+     *
+     * @param showSearchFilterSort  true on category menus (renders Search +
+     *                              Filter + Sort at slots 47/48/50)
+     * @param showSearchOnly        true on the main menu (renders ONLY Search
+     *                              at slot 47, leaves Filter/Sort as padding)
+     * @param favoriteRecipeId      non-null on recipe detail (renders the
+     *                              ★ toggle button); null on list menus
+     *                              (renders the "open favorites GUI" button)
+     */
+    private void renderActionBar54(Inventory inv, Player player,
+                                     String menuType, String context,
+                                     int currentPage, int totalPages,
+                                     boolean showSearchFilterSort,
+                                     boolean showSearchOnly,
+                                     String favoriteRecipeId) {
+        // Determine which GUI affordances are enabled.
+        boolean paginationEnabled = FeatureFlags.isGuiEnabled(plugin, "pagination-arrows");
+        boolean favoriteStarEnabled = FeatureFlags.isGuiEnabled(plugin, "favorite-star");
+        boolean searchBtnEnabled = FeatureFlags.isGuiEnabled(plugin, "search-button")
+                && plugin.getConfig().getBoolean("search.enabled", true);
+        boolean filterBtnEnabled = FeatureFlags.isGuiEnabled(plugin, "filter-button")
+                && plugin.getConfig().getBoolean("filters.enabled", true);
+        boolean sortBtnEnabled = FeatureFlags.isGuiEnabled(plugin, "sort-button")
+                && plugin.getConfig().getBoolean("sort.enabled", true);
+
+        // Black padding pane used to fill disabled slots (no tooltip).
+        Material innerMat = parseMaterial(
+                plugin.getConfig().getString("gui.inner-padding", DEFAULT_INNER_PADDING),
+                Material.BLACK_STAINED_GLASS_PANE);
+        ItemStack paddingPane = borderPane(innerMat);
+
+        // ─── Slot 46: ◀ PREV / Slot 52: ▶ NEXT ───
+        //   Always rendered — symmetric layout. Disabled (gray pane) when no
+        //   previous/next page OR when features.gui.pagination-arrows is false.
+        if (paginationEnabled) {
+            inv.setItem(slotPrevPage, buildPrevPageButton(menuType, context, currentPage, totalPages));
+            inv.setItem(slotNextPage, buildNextPageButton(menuType, context, currentPage, totalPages));
+        } else {
+            inv.setItem(slotPrevPage, paddingPane);
+            inv.setItem(slotNextPage, paddingPane);
+        }
+
+        // ─── Slot 47: SEARCH ───
+        //   v1.1.1 — Locked here on the main menu too (per user spec).
+        //   Rendered when EITHER showSearchFilterSort OR showSearchOnly is true
+        //   (and the search-button GUI flag + search.enabled config are both on).
+        boolean wantSearch = (showSearchFilterSort || showSearchOnly) && searchBtnEnabled;
+        if (wantSearch) {
+            // On the main menu we use the "main-menu-search-name" key so the
+            // tooltip matches the dashboard's visual language; on category
+            // menus we keep the legacy "category-search" key for backward compat.
+            String searchNameKey = showSearchOnly ? "main-menu-search-name" : "category-search";
+            List<String> searchLoreKeys = showSearchOnly
+                    ? List.of("main-menu-search-lore-1")
+                    : List.of("category-search-lore");
+            String searchMat = plugin.getConfig().getString("gui.buttons.search", "COMPASS");
+            inv.setItem(slotSearch, createButton(parseMaterial(searchMat, Material.COMPASS),
+                    searchNameKey, searchLoreKeys,
+                    "search", context != null ? context : "all"));
+        } else {
+            inv.setItem(slotSearch, paddingPane);
+        }
+
+        // ─── Slot 48: FILTER / Slot 50: SORT ───
+        //   Only on category menus (showSearchFilterSort=true). On the main
+        //   menu (showSearchOnly=true) and everywhere else, these slots are
+        //   clean BLACK padding — nothing floats.
+        if (showSearchFilterSort) {
+            if (filterBtnEnabled) {
+                inv.setItem(slotFilter, buildFilterButton(player, context));
+            } else {
+                inv.setItem(slotFilter, paddingPane);
+            }
+            if (sortBtnEnabled) {
+                inv.setItem(slotSort, buildSortButton(player, context));
+            } else {
+                inv.setItem(slotSort, paddingPane);
+            }
+        } else {
+            inv.setItem(slotFilter, paddingPane);
+            inv.setItem(slotSort, paddingPane);
+        }
+
+        // ─── Slot 49: ✖ CLOSE / BACK BARRIER (centre, ALWAYS rendered) ───
+        //   This is the user's primary escape hatch — it must never be empty.
+        String backMat = plugin.getConfig().getString("gui.buttons.back", "BARRIER");
+        inv.setItem(slotBackClose, createButton(parseMaterial(backMat, Material.BARRIER),
+                "category-back-to-main", List.of(),
+                "main", "none"));
+
+        // ─── Slot 51: ★ FAVORITE STAR ───
+        //   • On recipe DETAIL: toggles favorite for that specific recipe.
+        //   • On list/main menus: opens the Favorites GUI (list of favorites).
+        //   • Disabled entirely if features.gui.favorite-star.enabled=false
+        //     OR if the favorites system itself is disabled.
+        if (!favoriteStarEnabled || favoritesManager == null || !favoritesManager.isEnabled()) {
+            inv.setItem(slotFavorite, paddingPane);
+        } else if (favoriteRecipeId != null) {
+            inv.setItem(slotFavorite, buildFavoriteButton(player, favoriteRecipeId));
+        } else if (FeatureFlags.isGuiEnabled(plugin, "favorites-gui")) {
+            // Show the "open favorites list" button (golden nether star)
+            String favMat = plugin.getConfig().getString("gui.buttons.favorite-on", "NETHER_STAR");
+            ItemStack favBtn = createButton(parseMaterial(favMat, Material.NETHER_STAR),
+                    "main-menu-favorites-name",
+                    List.of("main-menu-favorites-lore-1", "main-menu-favorites-lore-2"),
+                    "open_favorites", "none");
+            // Add enchant glint to make it stand out
+            ItemMeta m = favBtn.getItemMeta();
+            if (m != null) {
+                m.addEnchant(Enchantment.UNBREAKING, 1, true);
+                m.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                favBtn.setItemMeta(m);
+            }
+            inv.setItem(slotFavorite, favBtn);
+        } else {
+            inv.setItem(slotFavorite, paddingPane);
+        }
+    }
+
+    /** Legacy overload — keep old callers compiling. Equivalent to showSearchOnly=false. */
+    private void renderActionBar54(Inventory inv, Player player,
+                                     String menuType, String context,
+                                     int currentPage, int totalPages,
+                                     boolean showSearchFilterSort,
+                                     String favoriteRecipeId) {
+        renderActionBar54(inv, player, menuType, context, currentPage, totalPages,
+                showSearchFilterSort, false, favoriteRecipeId);
     }
 
     // =====================================================================
@@ -131,84 +589,284 @@ public class CraftingGUIManager {
     // =====================================================================
 
     public void openMainMenu(Player player) {
+        // ─── v1.2.0 — Config-driven main dashboard ───
+        //
+        //   The icon layout is read from `gui.main-menu.icons` in config.yml.
+        //   Server owners can rearrange icons, swap materials, change tooltip
+        //   lang keys, or remove icons entirely by editing the config — no
+        //   Java code changes required.
+        //
+        //   Each icon entry has: slot, material, name-key, lore-keys, action,
+        //   value, and optional `feature` (gates visibility by a feature flag)
+        //   and `dynamic` (fills placeholders at render time).
+        //
+        //   The chrome (gray border + black padding) and the action bar
+        //   (slots 46/49/51/52) are still rendered by fillChrome54 +
+        //   renderActionBar54, so the layout is always symmetric regardless
+        //   of which icons are configured.
         Inventory inv = Bukkit.createInventory(
                 new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),
-                27,
+                54,
                 messages.getMessage("main-menu-title"));
 
-        String borderMat = plugin.getConfig().getString("gui.main-menu-border", "GRAY_STAINED_GLASS_PANE");
-        fillBorders(inv, 27, parseMaterial(borderMat, Material.GRAY_STAINED_GLASS_PANE));
+        // Fill the standardized chrome (gray border + black padding, no stray items).
+        fillChrome54(inv);
 
-        // Rods button (slot 11)
+        // ─── Render config-driven icons ───
+        renderConfigDrivenMainMenuIcons(inv, player);
+
+        // ─── Standardized action bar (Row 6) ───
+        //   Slot 46: ◀ PREV (disabled — main menu is page 1/1)
+        //   Slot 47: 🔍 SEARCH (locked here per user spec — v1.1.1)
+        //   Slot 49: ✖ CLOSE BARRIER (centre, locked)
+        //   Slot 51: ★ FAVORITES (locked here per user spec)
+        //   Slot 52: ▶ NEXT (disabled)
+        renderActionBar54(inv, player, MENU_CATEGORY, null,
+                0, 1, false, true, null);
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Iterate the {@code gui.main-menu.icons} config list and render each
+     * icon at its configured slot. Skips icons whose {@code feature} flag
+     * is disabled, or whose slot is out of range / collides with an
+     * action-bar slot.
+     *
+     * <p>v1.2.0 — every config read is wrapped in try/catch so a malformed
+     * icon entry (missing material, invalid slot, etc.) is skipped with a
+     * console warning instead of crashing the entire main-menu render.</p>
+     *
+     * @since v1.2.0
+     */
+    private void renderConfigDrivenMainMenuIcons(Inventory inv, Player player) {
+        java.util.List<java.util.Map<?, ?>> icons;
+        try {
+            icons = plugin.getConfig().getMapList("gui.main-menu.icons");
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Failed reading gui.main-menu.icons: "
+                    + t.getMessage() + " — main menu will show no icons.");
+            return;
+        }
+        if (icons == null || icons.isEmpty()) {
+            // No icon list configured — fall back to the hardcoded defaults
+            // so the main menu is never empty.
+            renderDefaultMainMenuIcons(inv, player);
+            return;
+        }
+
+        // Build a set of action-bar slots so we don't overwrite them.
+        java.util.Set<Integer> reserved = new java.util.HashSet<>();
+        reserved.add(slotInfoLeft); reserved.add(slotPrevPage); reserved.add(slotSearch);
+        reserved.add(slotFilter); reserved.add(slotBackClose); reserved.add(slotSort);
+        reserved.add(slotFavorite); reserved.add(slotNextPage); reserved.add(slotInfoRight);
+
+        for (int i = 0; i < icons.size(); i++) {
+            java.util.Map<?, ?> entry = icons.get(i);
+            if (entry == null) continue;
+            try {
+                Object slotObj = entry.get("slot");
+                if (!(slotObj instanceof Integer)) {
+                    plugin.getLogger().warning("gui.main-menu.icons[" + i + "]: missing/invalid 'slot' — skipping.");
+                    continue;
+                }
+                int slot = (Integer) slotObj;
+                if (slot < 0 || slot > 53 || reserved.contains(slot)) {
+                    plugin.getLogger().warning("gui.main-menu.icons[" + i + "]: slot " + slot
+                            + " is out of range or reserved (action-bar) — skipping.");
+                    continue;
+                }
+
+                // Feature flag gate — skip if the named feature is disabled.
+                String feature = entry.get("feature") instanceof String ? (String) entry.get("feature") : null;
+                if (feature != null && !feature.isEmpty()
+                        && !"info-icon".equals(feature)   // info-icon is always shown
+                        && !FeatureFlags.isEnabled(plugin, feature)
+                        && !FeatureFlags.isGuiEnabled(plugin, feature)) {
+                    continue;
+                }
+
+                String material = entry.get("material") instanceof String ? (String) entry.get("material") : "STONE";
+                String nameKey = entry.get("name-key") instanceof String ? (String) entry.get("name-key") : "main-menu-rods-name";
+                java.util.List<String> loreKeys = new java.util.ArrayList<>();
+                Object loreObj = entry.get("lore-keys");
+                if (loreObj instanceof java.util.List<?> ll) {
+                    for (Object o : ll) if (o instanceof String s) loreKeys.add(s);
+                }
+                String action = entry.get("action") instanceof String ? (String) entry.get("action") : "none";
+                String value = entry.get("value") instanceof String ? (String) entry.get("value") : "none";
+                boolean dynamic = Boolean.TRUE.equals(entry.get("dynamic"));
+
+                ItemStack icon;
+                if (dynamic) {
+                    // The "info-icon" is dynamic — fill %xp%, %xp_required%, %level%.
+                    Map<String, String> ph = new HashMap<>();
+                    ph.put("%xp%", String.valueOf(fishApi.getCraftingXp(player.getUniqueId())));
+                    ph.put("%xp_required%", String.valueOf(fishApi.getCraftingXpRequired(player.getUniqueId())));
+                    ph.put("%level%", String.valueOf(fishApi.getCraftingLevel(player.getUniqueId())));
+                    icon = createInfoButton(ph);
+                } else {
+                    icon = createButton(parseMaterial(material, Material.STONE),
+                            nameKey, loreKeys, action, value);
+                }
+                inv.setItem(slot, icon);
+            } catch (Throwable t) {
+                plugin.getLogger().warning("gui.main-menu.icons[" + i + "]: render failed — "
+                        + t.getMessage() + " — skipping.");
+            }
+        }
+    }
+
+    /**
+     * Hardcoded fallback for when {@code gui.main-menu.icons} is missing or
+     * empty. Renders the v1.1.1 default 3×2 central matrix.
+     *
+     * @since v1.2.0
+     */
+    private void renderDefaultMainMenuIcons(Inventory inv, Player player) {
+        // RODS (slot 21)
         String rodsMat = plugin.getConfig().getString("gui.category-icons.rods", "FISHING_ROD");
-        inv.setItem(11, createButton(
-                parseMaterial(rodsMat, Material.FISHING_ROD),
+        inv.setItem(21, createButton(parseMaterial(rodsMat, Material.FISHING_ROD),
                 "main-menu-rods-name",
                 List.of("main-menu-rods-lore-1", "main-menu-rods-lore-2"),
                 "category", "rod"));
-
-        // Info button (slot 13)
+        // INFO (slot 22)
         Map<String, String> infoPh = new HashMap<>();
         infoPh.put("%xp%", String.valueOf(fishApi.getCraftingXp(player.getUniqueId())));
         infoPh.put("%xp_required%", String.valueOf(fishApi.getCraftingXpRequired(player.getUniqueId())));
         infoPh.put("%level%", String.valueOf(fishApi.getCraftingLevel(player.getUniqueId())));
-        inv.setItem(13, createInfoButton(infoPh));
-
-        // Baits button (slot 15)
+        inv.setItem(22, createInfoButton(infoPh));
+        // BAITS (slot 23)
         String baitsMat = plugin.getConfig().getString("gui.category-icons.baits", "STICK");
-        inv.setItem(15, createButton(
-                parseMaterial(baitsMat, Material.STICK),
+        inv.setItem(23, createButton(parseMaterial(baitsMat, Material.STICK),
                 "main-menu-baits-name",
                 List.of("main-menu-baits-lore-1", "main-menu-baits-lore-2"),
                 "category", "bait"));
-
-        // Faz 0.3.0: Stats button (slot 4) — only if stats enabled
+        // STATS (slot 30)
         if (statsManager != null && statsManager.isEnabled()) {
             String statsMat = plugin.getConfig().getString("gui.buttons.stats", "BOOK");
-            inv.setItem(4, createButton(
-                    parseMaterial(statsMat, Material.BOOK),
+            inv.setItem(30, createButton(parseMaterial(statsMat, Material.BOOK),
                     "main-menu-stats-name",
                     List.of("main-menu-stats-lore-1", "main-menu-stats-lore-2"),
                     "open_stats", "none"));
         }
-
-        // Faz 0.5.0: Recipes button (slot 3) — only if recipe-sharing enabled
+        // RECIPES (slot 31)
         if (recipeManager != null && recipeManager.isEnabled()) {
             String recipesMat = plugin.getConfig().getString("gui.buttons.recipes", "WRITTEN_BOOK");
-            inv.setItem(3, createButton(
-                    parseMaterial(recipesMat, Material.WRITTEN_BOOK),
+            inv.setItem(31, createButton(parseMaterial(recipesMat, Material.WRITTEN_BOOK),
                     "main-menu-recipes-name",
                     List.of("main-menu-recipes-lore-1", "main-menu-recipes-lore-2"),
                     "open_recipes", "none"));
         }
-
-        // Faz 0.3.0: Achievements button (slot 22) — only if achievements enabled
+        // ACHIEVEMENTS (slot 32)
         if (achievementManager != null && achievementManager.isEnabled()) {
             String achMat = plugin.getConfig().getString("gui.buttons.achievements", "GOLDEN_APPLE");
-            inv.setItem(22, createButton(
-                    parseMaterial(achMat, Material.GOLDEN_APPLE),
+            inv.setItem(32, createButton(parseMaterial(achMat, Material.GOLDEN_APPLE),
                     "main-menu-achievements-name",
                     List.of("main-menu-achievements-lore-1", "main-menu-achievements-lore-2"),
                     "open_achievements", "none"));
-        } else {
-            // Close button fallback
-            String closeMat = plugin.getConfig().getString("gui.buttons.close", "BARRIER");
-            inv.setItem(22, createButton(
-                    parseMaterial(closeMat, Material.BARRIER),
-                    "main-menu-close-name",
-                    List.of(),
-                    "close", "none"));
+        }
+    }
+
+    /**
+     * Open the Favorites GUI — a paginated list of the player's favorited
+     * recipes. Each entry is the recipe's result-item icon (with a star
+     * marker in the lore), and clicking opens the recipe detail. Slot 51
+     * shows the "remove-from-favorites" toggle on the recipe detail screen.
+     *
+     * @param player the viewing player
+     * @since v1.1.0
+     */
+    public void openFavoritesMenu(Player player) {
+        openFavoritesMenu(player, 0);
+    }
+
+    public void openFavoritesMenu(Player player, int page) {
+        if (favoritesManager == null || !favoritesManager.isEnabled()) {
+            player.sendMessage(messages.getMessage("favorite-disabled", true));
+            return;
+        }
+        List<String> favIds = favoritesManager.getFavorites(player.getUniqueId());
+        if (favIds.isEmpty()) {
+            // Show the empty state in a 54-slot GUI for visual consistency.
+            Inventory inv = Bukkit.createInventory(
+                    new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),
+                    54,
+                    messages.getMessage("favorites-gui-title"));
+            fillChrome54(inv);
+            ItemStack placeholder = new ItemStack(parseMaterial(
+                    plugin.getConfig().getString("gui.buttons.empty-category", "BARRIER"),
+                    Material.BARRIER));
+            ItemMeta meta = placeholder.getItemMeta();
+            if (meta != null) {
+                meta.displayName(messages.getMessage("favorites-empty-name"));
+                List<Component> lore = new ArrayList<>();
+                lore.add(Component.empty());
+                lore.add(messages.getMessage("favorites-empty-lore-1"));
+                lore.add(messages.getMessage("favorites-empty-lore-2"));
+                lore.add(Component.empty());
+                lore.add(messages.getMessage("favorites-gui-empty-lore"));
+                meta.lore(lore);
+                meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "none");
+                meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
+                placeholder.setItemMeta(meta);
+            }
+            inv.setItem(22, placeholder); // center
+            renderActionBar54(inv, player, MENU_FAVORITES, null, 0, 1, false, null);
+            player.openInventory(inv);
+            return;
         }
 
-        // Close button (slot 26) — always available
-        String closeMat = plugin.getConfig().getString("gui.buttons.close", "BARRIER");
-        inv.setItem(26, createButton(
-                parseMaterial(closeMat, Material.BARRIER),
-                "main-menu-close-name",
-                List.of(),
-                "close", "none"));
+        // Resolve recipe objects for each favorite (skip recipes that no
+        // longer exist in PhoenixFish — they're orphaned favorites).
+        List<CraftRecipe> favRecipes = new ArrayList<>();
+        for (String id : favIds) {
+            CraftRecipe r = fishApi.getCraftingRecipe(id);
+            if (r != null) favRecipes.add(r);
+        }
+        if (favRecipes.isEmpty()) {
+            // All favorited recipes were removed from PhoenixFish — show empty
+            openFavoritesMenu(player); // re-enter the empty-state branch
+            return;
+        }
 
+        int itemsPerPage = getItemsPerPage();
+        int totalPages = Math.max(1, (int) Math.ceil((double) favRecipes.size() / itemsPerPage));
+        if (page < 0) page = 0;
+        if (page >= totalPages) page = totalPages - 1;
+
+        Inventory inv = Bukkit.createInventory(
+                new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),
+                54,
+                messages.getMessage("favorites-gui-title"));
+        fillChrome54(inv);
+
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, favRecipes.size());
+        List<ItemStack> pageItems = new ArrayList<>(end - start);
+        for (int i = start; i < end; i++) {
+            pageItems.add(buildFavoriteRecipeIcon(player, favRecipes.get(i)));
+        }
+        populateContent(inv, pageItems);
+
+        renderActionBar54(inv, player, MENU_FAVORITES, null, page, totalPages, false, null);
         player.openInventory(inv);
+    }
+
+    /**
+     * Build a recipe icon for the Favorites GUI — same look as the standard
+     * recipe icon, but with an extra "★ Favorited" lore line at the top so
+     * the player can tell which favorites they're looking at.
+     */
+    private ItemStack buildFavoriteRecipeIcon(Player player, CraftRecipe recipe) {
+        ItemStack icon = buildRecipeIcon(player, recipe);
+        ItemMeta meta = icon.getItemMeta();
+        if (meta == null) return icon;
+        List<Component> lore = new ArrayList<>(meta.lore() != null ? meta.lore() : List.of());
+        lore.add(0, messages.getMessage("favorite-lore-on-1"));
+        meta.lore(lore);
+        icon.setItemMeta(meta);
+        return icon;
     }
 
     private ItemStack createInfoButton(Map<String, String> ph) {
@@ -284,57 +942,20 @@ public class CraftingGUIManager {
                 54,
                 title);
 
-        // Border
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 54, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+        // v1.1.0 — Standardized chrome (gray border + black padding, no stray items)
+        fillChrome54(inv);
 
-        // Recipe icons
         int startIndex = page * itemsPerPage;
         int endIndex = Math.min(startIndex + itemsPerPage, recipes.size());
-        int slot = 0;
+        List<ItemStack> pageItems = new ArrayList<>(endIndex - startIndex);
         for (int i = startIndex; i < endIndex; i++) {
-            CraftRecipe recipe = recipes.get(i);
-            ItemStack icon = buildRecipeIcon(player, recipe);
-            inv.setItem(slot, icon);
-            slot++;
+            pageItems.add(buildRecipeIcon(player, recipes.get(i)));
         }
+        populateContent(inv, pageItems);
 
-        // Navigation + toolbar (slot 45-53)
-        String arrowMat = plugin.getConfig().getString("gui.buttons.prev-page", "ARROW");
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "BARRIER");
-        String nextMat = plugin.getConfig().getString("gui.buttons.next-page", "ARROW");
-
-        // Slot 45: prev page
-        if (page > 0) {
-            inv.setItem(45, createButton(parseMaterial(arrowMat, Material.ARROW),
-                    "category-prev-page", List.of(),
-                    "page", category + ":" + (page - 1)));
-        }
-        // Slot 46: search (Faz 0.4.0) — only if enabled
-        if (plugin.getConfig().getBoolean("search.enabled", true)) {
-            String searchMat = plugin.getConfig().getString("gui.buttons.search", "COMPASS");
-            inv.setItem(46, createButton(parseMaterial(searchMat, Material.COMPASS),
-                    "category-search", List.of("category-search-lore"),
-                    "search", category));
-        }
-        // Slot 47: filter (Faz 0.4.0) — only if enabled
-        if (plugin.getConfig().getBoolean("filters.enabled", true)) {
-            inv.setItem(47, buildFilterButton(player, category));
-        }
-        // Slot 48: sort (Faz 0.4.0) — only if enabled
-        if (plugin.getConfig().getBoolean("sort.enabled", true)) {
-            inv.setItem(48, buildSortButton(player, category));
-        }
-        // Slot 49: back to main
-        inv.setItem(49, createButton(parseMaterial(backMat, Material.BARRIER),
-                "category-back-to-main", List.of(),
-                "main", "none"));
-        // Slot 53: next page
-        if (page < totalPages - 1) {
-            inv.setItem(53, createButton(parseMaterial(nextMat, Material.ARROW),
-                    "category-next-page", List.of(),
-                    "page", category + ":" + (page + 1)));
-        }
+        // Standardized action bar (Row 6) — search/filter/sort enabled
+        renderActionBar54(inv, player, MENU_CATEGORY, category, page, totalPages,
+                true, null);
 
         player.openInventory(inv);
     }
@@ -476,15 +1097,15 @@ public class CraftingGUIManager {
         }
         Component title = messages.getMessage(titleKey, titlePh);
 
+        // v1.1.0 — use 54-slot standardized chrome so the empty state matches
+        // the rest of the GUI's visual language.
         Inventory inv = Bukkit.createInventory(
                 new CraftingGUIHolder(CraftingGUIHolder.ScreenType.CATEGORY, category, 0),
-                27,
+                54,
                 title);
+        fillChrome54(inv);
 
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 27, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
-
-        // Center placeholder (slot 13)
+        // Center placeholder (slot 22)
         String placeholderMat = plugin.getConfig().getString("gui.buttons.empty-category", "BARRIER");
         ItemStack placeholder = new ItemStack(parseMaterial(placeholderMat, Material.BARRIER));
         ItemMeta meta = placeholder.getItemMeta();
@@ -503,13 +1124,10 @@ public class CraftingGUIManager {
             meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
             placeholder.setItemMeta(meta);
         }
-        inv.setItem(13, placeholder);
+        inv.setItem(22, placeholder);
 
-        // Back to main menu (slot 22)
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(22, createButton(parseMaterial(backMat, Material.ARROW),
-                "empty-back-to-main", List.of(),
-                "main", "none"));
+        // Standardized action bar — Back to main at slot 49
+        renderActionBar54(inv, player, MENU_CATEGORY, category, 0, 1, false, null);
 
         player.openInventory(inv);
     }
@@ -544,13 +1162,12 @@ public class CraftingGUIManager {
         }
         Component title = messages.getMessage(titleKey, titlePh);
 
+        // v1.1.0 — use 54-slot standardized chrome.
         Inventory inv = Bukkit.createInventory(
                 new CraftingGUIHolder(CraftingGUIHolder.ScreenType.CATEGORY, category, 0),
-                27,
+                54,
                 title);
-
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 27, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+        fillChrome54(inv);
 
         // Resolve the localized label for the active filter mode
         String modeKey;
@@ -565,7 +1182,7 @@ public class CraftingGUIManager {
         ph.put("%category%", category);
         ph.put("%mode%", modeLabel);
 
-        // Center placeholder (slot 13) — explains the filter excluded everything
+        // Center placeholder (slot 22) — explains the filter excluded everything
         String placeholderMat = plugin.getConfig().getString("gui.buttons.empty-category", "BARRIER");
         ItemStack placeholder = new ItemStack(parseMaterial(placeholderMat, Material.BARRIER));
         ItemMeta meta = placeholder.getItemMeta();
@@ -577,25 +1194,13 @@ public class CraftingGUIManager {
             lore.add(messages.getMessage("filter-no-match-lore-2", ph));
             lore.add(messages.getMessage("filter-no-match-lore-3", ph));
 
-            // If PhoenixFish reports crafting is unavailable, show an extra
-            // hint line telling the player (and any admin reading the chat)
-            // what to do. This catches the most common root cause: the
-            // server left xp-system.enabled=false in PhoenixFish config.
-            //
-            // We use reflection to call getCraftingUnavailableReason() so
-            // this code compiles against OLD PhoenixFish builds too (where
-            // the method doesn't exist yet). If the new PhoenixFish is
-            // loaded at runtime, we get the detailed reason code; otherwise
-            // we fall back to the legacy isCraftingAvailable() flag.
             String reason = invokeCraftingUnavailableReason(fishApi);
             if (reason == null) {
-                // Legacy fallback: works against any PhoenixFish version
                 try {
                     if (!fishApi.isCraftingAvailable()) {
                         reason = "xp-system-disabled";
                     }
                 } catch (Throwable ignored) {
-                    // ignore — we just won't show the extra hint
                 }
             }
             if (reason != null) {
@@ -610,18 +1215,13 @@ public class CraftingGUIManager {
             meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
             placeholder.setItemMeta(meta);
         }
-        inv.setItem(13, placeholder);
+        inv.setItem(22, placeholder);
 
         // Filter button at slot 11 — lets the player cycle the filter back
-        // (e.g. CRAFTABLE → LOCKED → ALL). Clicking it triggers the normal
-        // cycle_filter handler, which reopens this category menu.
         inv.setItem(11, buildFilterButton(player, category));
 
-        // Back to main menu (slot 15)
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(15, createButton(parseMaterial(backMat, Material.ARROW),
-                "empty-back-to-main", List.of(),
-                "main", "none"));
+        // Standardized action bar — Back to main at slot 49
+        renderActionBar54(inv, player, MENU_CATEGORY, category, 0, 1, false, null);
 
         player.openInventory(inv);
     }
@@ -656,9 +1256,31 @@ public class CraftingGUIManager {
 
     /**
      * Build the recipe's result item as the icon, with lore listing required materials.
+     *
+     * <p>v1.1.2 — NPE hardening: every PhoenixFish API return value is now
+     * null-checked. If {@code recipe.resultItem()} returns null (corrupted
+     * recipe definition, race during PhoenixFish reload, etc.), we substitute
+     * a BARRIER placeholder so the GUI still renders and the player sees a
+     * clear "broken recipe" indicator instead of a stack trace. Same for
+     * null {@code recipe.ingredients()} and null {@code ing.item()}.</p>
      */
     private ItemStack buildRecipeIcon(Player player, CraftRecipe recipe) {
-        ItemStack icon = recipe.resultItem().clone();
+        ItemStack resultItem = recipe.resultItem();
+        if (resultItem == null) {
+            // Corrupted recipe — render a BARRIER so the slot isn't empty.
+            plugin.getLogger().warning("Recipe '" + recipe.id()
+                    + "' has null resultItem() — rendering BARRIER placeholder.");
+            ItemStack broken = new ItemStack(Material.BARRIER);
+            ItemMeta brokenMeta = broken.getItemMeta();
+            if (brokenMeta != null) {
+                brokenMeta.displayName(messages.getMessage("craft-recipe-unknown"));
+                brokenMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "none");
+                brokenMeta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
+                broken.setItemMeta(brokenMeta);
+            }
+            return broken;
+        }
+        ItemStack icon = resultItem.clone();
         ItemMeta meta = icon.getItemMeta();
         if (meta == null) return icon;
 
@@ -667,15 +1289,19 @@ public class CraftingGUIManager {
         lore.add(messages.getMessage("recipe-ingredients-header"));
 
         boolean hasAllMaterials = true;
-        for (CraftRecipe.Ingredient ing : recipe.ingredients()) {
-            int owned = countInInventory(player, ing.item());
+        List<CraftRecipe.Ingredient> ingredients = recipe.ingredients();
+        if (ingredients == null) ingredients = List.of();   // defensive — null list
+        for (CraftRecipe.Ingredient ing : ingredients) {
+            if (ing == null) continue;                       // defensive — null entry
+            ItemStack ingItem = ing.item();
+            int owned = ingItem == null ? 0 : countInInventory(player, ingItem);
             int needed = ing.amount();
             boolean ok = owned >= needed;
             if (!ok) hasAllMaterials = false;
 
             Map<String, String> ph = new HashMap<>();
             ph.put("%color%", ok ? "<green>" : "<red>");
-            ph.put("%name%", describeItem(ing.item()));
+            ph.put("%name%", describeItem(ingItem));
             ph.put("%owned%", String.valueOf(owned));
             ph.put("%needed%", String.valueOf(needed));
             lore.add(messages.getMessageRaw("recipe-ingredient-line", ph));
@@ -723,17 +1349,36 @@ public class CraftingGUIManager {
             return;
         }
 
+        // ─── v1.1.0 — 54-slot recipe detail GUI ───
+        //   Row 1 (0-8):    GRAY outer border
+        //   Rows 2-5:       BLACK padding + result/ingredients/craft buttons
+        //                   slot 11 = ingredients | slot 13 = result preview
+        //                   slot 14 = CRAFT       | slot 15 = CRAFT & CLOSE
+        //                   slot 22 = MAX CRAFT (only if maxCraftable > 1)
+        //   Row 6 (45-53):  standardized action bar — slot 46 prev-disabled,
+        //                   slot 49 BACK BARRIER, slot 51 FAVORITE toggle,
+        //                   slot 52 next-disabled.
         Inventory inv = Bukkit.createInventory(
                 new CraftingGUIHolder(CraftingGUIHolder.ScreenType.DETAIL,
                         recipe.category(), 0, recipe.id()),
-                27,
+                54,
                 messages.getMessage("detail-title"));
 
-        String borderMat = plugin.getConfig().getString("gui.detail-border", "GRAY_STAINED_GLASS_PANE");
-        fillBorders(inv, 27, parseMaterial(borderMat, Material.GRAY_STAINED_GLASS_PANE));
+        // v1.1.0 — Standardized chrome (gray border + black padding)
+        fillChrome54(inv);
 
         // Result preview at slot 13
-        ItemStack preview = recipe.resultItem().clone();
+        // v1.1.2 — NPE guard: recipe.resultItem() may return null if the
+        // PhoenixFish recipe definition is corrupted or being reloaded.
+        ItemStack resultRaw = recipe.resultItem();
+        ItemStack preview;
+        if (resultRaw == null) {
+            plugin.getLogger().warning("Recipe '" + recipe.id()
+                    + "' has null resultItem() in openRecipeDetail — using BARRIER.");
+            preview = new ItemStack(Material.BARRIER);
+        } else {
+            preview = resultRaw.clone();
+        }
         ItemMeta previewMeta = preview.getItemMeta();
         if (previewMeta != null) {
             List<Component> lore = new ArrayList<>(previewMeta.lore() != null ? previewMeta.lore() : List.of());
@@ -742,12 +1387,12 @@ public class CraftingGUIManager {
             previewMeta.lore(lore);
             preview.setItemMeta(previewMeta);
         }
-        inv.setItem(13, preview);
+        inv.setItem(slotResultPreview, preview);
 
-        // Ingredients list at slot 11
-        inv.setItem(11, buildIngredientsItem(player, recipe));
+        // Ingredients list — slot from gui.recipe-detail.slots.ingredients-list
+        inv.setItem(slotIngredientsList, buildIngredientsItem(player, recipe));
 
-        // Faz 0.2.0: Three craft buttons now
+        // Three craft buttons (Faz 0.2.0)
         boolean canCraft = fishApi.canCraft(player, recipe);
         int maxCraftable = fishApi.maxCraftable(player, recipe);
 
@@ -757,35 +1402,26 @@ public class CraftingGUIManager {
         String disabledMat = plugin.getConfig().getString("gui.buttons.craft-disabled", "RED_CONCRETE");
 
         if (canCraft) {
-            // Slot 14: CRAFT (1x, ekran açık kalır)
-            inv.setItem(14, buildCraftButton(craftReadyMat, "detail-craft-name",
+            inv.setItem(slotCraftSingle, buildCraftButton(craftReadyMat, "detail-craft-name",
                     buildCraftLore("detail-craft-lore-1", "detail-craft-lore-2",
                             "detail-craft-shift-hint", maxCraftable),
                     "craft", recipe.id()));
 
-            // Slot 15: CRAFT AND CLOSE (1x, ekran kapanır)
-            inv.setItem(15, buildCraftButton(craftCloseMat, "detail-craft-close-name",
+            inv.setItem(slotCraftClose, buildCraftButton(craftCloseMat, "detail-craft-close-name",
                     buildCraftLore("detail-craft-close-lore-1", null,
                             "detail-craft-close-shift-hint", maxCraftable),
                     "craft_and_close", recipe.id()));
 
-            // Slot 22: MAX CRAFT (toplu, ekran kapanmaz) — Faz 0.2.0
-            // Back button'u slot 22'den 21'e taşıyalım (MAX butonu 22'ye)
-            // Aslında en güzeli: slot 21 = MAX, slot 22 = BACK
             if (maxCraftable > 1) {
                 Map<String, String> maxPh = new HashMap<>();
                 maxPh.put("%count%", String.valueOf(maxCraftable));
                 List<Component> maxLore = new ArrayList<>();
                 maxLore.add(messages.getMessage("detail-craft-max-lore-1", maxPh));
                 maxLore.add(messages.getMessage("detail-craft-max-lore-2"));
-                inv.setItem(21, buildCraftButton(craftMaxMat, "detail-craft-max-name",
+                inv.setItem(slotCraftMax, buildCraftButton(craftMaxMat, "detail-craft-max-name",
                         maxLore, "craft_max", recipe.id()));
-            } else {
-                // maxCraftable == 1 → MAX butonu gereksiz, boş bırak
-                // (slot 21'de zaten border yok, glass pane koyalım)
             }
         } else {
-            // Disabled — both slots show disabled button
             int playerLevel = fishApi.getCraftingLevel(player.getUniqueId());
             boolean levelOk = playerLevel >= recipe.craftingLevelRequirement();
             String reasonKey = levelOk
@@ -796,28 +1432,139 @@ public class CraftingGUIManager {
             disabledLore.add(messages.getMessage(reasonKey));
             disabledLore.add(messages.getMessage("detail-craft-disabled-lore-2"));
 
-            inv.setItem(14, buildCraftButton(disabledMat, "detail-craft-disabled-name",
+            inv.setItem(slotCraftSingle, buildCraftButton(disabledMat, "detail-craft-disabled-name",
                     disabledLore, "craft_disabled", recipe.id()));
-            inv.setItem(15, buildCraftButton(disabledMat, "detail-craft-disabled-name",
+            inv.setItem(slotCraftClose, buildCraftButton(disabledMat, "detail-craft-disabled-name",
                     disabledLore, "craft_disabled", recipe.id()));
         }
 
-        // Back button at slot 22 (or slot 23 if MAX is at 21)
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        // Eğer MAX butonu slot 21'deyse, back'i 22'ye koy
-        // Eğer MAX butonu yoksa (maxCraftable <= 1), back'i 22'ye koy (yine)
-        int backSlot = 22;
-        // Override: slot 22'ye back koyalım, MAX butonu 21'de
-        // (eğer MAX butonu 21'e konulduysa, back 22'de olur — çakışma yok)
-        // Aslında yukarıda MAX butonu 21'e kondu, back 22'ye — sorun yok
-        // Ama eğer MAX konmadıysa (maxCraftable <= 1), back 22'de olur — yine sorun yok
-        // Override: 21'de MAX varsa 22 = back; 21'de MAX yoksa 22 = back. Her durumda 22 = back. OK.
+        // ─── Standardized action bar (Row 6) ───
+        //   Slot 49: BACK BARRIER (centre) — overrides the default CLOSE
+        //            so clicking it returns to the category menu instead
+        //            of just closing. We pass favoriteRecipeId = recipe.id()
+        //            so slot 51 shows the ★ FAVORITE TOGGLE button (not the
+        //            "open favorites list" button used on list menus).
+        renderActionBar54(inv, player, MENU_CATEGORY, recipe.category(),
+                0, 1, false, recipe.id());
 
-        inv.setItem(backSlot, createButton(parseMaterial(backMat, Material.ARROW),
+        // Override the centre Close button with a BACK button (recipe detail
+        // returns to its parent category menu, not the main menu).
+        String backMat = plugin.getConfig().getString("gui.buttons.back", "BARRIER");
+        inv.setItem(slotBackClose, createButton(parseMaterial(backMat, Material.BARRIER),
                 "detail-back-name", List.of("detail-back-lore"),
                 "back_to_category", recipe.category()));
 
         player.openInventory(inv);
+    }
+
+    /**
+     * Build the Favorite toggle button for the recipe detail GUI.
+     *
+     * <p>Two visual states:</p>
+     * <ul>
+     *   <li><b>Not favorited</b> — plain {@code NETHER_STAR}, name
+     *       "☆ Favorite Recipe", lore "Click to favorite this recipe."</li>
+     *   <li><b>Favorited</b> — enchanted {@code NETHER_STAR} (glowing),
+     *       name "★ Favorited!", lore "Status: Favorited" +
+     *       "Click to remove from favorites."</li>
+     * </ul>
+     *
+     * <p>PDC: action = {@code "toggle_favorite"}, value = recipeId.</p>
+     *
+     * @param player   the player viewing the detail GUI
+     * @param recipeId the recipe id whose favorite state to reflect
+     * @return the button itemstack
+     */
+    private ItemStack buildFavoriteButton(Player player, String recipeId) {
+        boolean isFavorite = favoritesManager != null
+                && favoritesManager.isEnabled()
+                && favoritesManager.isFavorite(player.getUniqueId(), recipeId);
+
+        String matName = plugin.getConfig().getString(
+                isFavorite ? "gui.buttons.favorite-on" : "gui.buttons.favorite-off",
+                "NETHER_STAR");
+        Material mat = parseMaterial(matName, Material.NETHER_STAR);
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return item;
+
+        String nameKey = isFavorite ? "favorite-name-on" : "favorite-name-off";
+        meta.displayName(messages.getMessage(nameKey));
+
+        List<Component> lore = new ArrayList<>();
+        if (isFavorite) {
+            lore.add(messages.getMessage("favorite-lore-on-1"));
+            lore.add(messages.getMessage("favorite-lore-on-2"));
+            // Glowing enchant glint — hide the enchant text so only the glint shows
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        } else {
+            lore.add(messages.getMessage("favorite-lore-off-1"));
+            lore.add(messages.getMessage("favorite-lore-off-2"));
+        }
+        meta.lore(lore);
+
+        meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "toggle_favorite");
+        meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, recipeId);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /**
+     * Handle a click on the Favorite toggle button. Toggles the recipe's
+     * favorite state in the player's profile, plays a sound, refreshes the
+     * button in-place (no GUI close/reopen), and sends a chat confirmation.
+     *
+     * @param player   the clicking player
+     * @param recipeId the recipe id (from the button's PDC value)
+     */
+    public void handleFavoriteToggle(Player player, String recipeId) {
+        if (favoritesManager == null || !favoritesManager.isEnabled()) {
+            player.sendMessage(messages.getMessage("favorite-disabled", true));
+            return;
+        }
+
+        CraftRecipe recipe = fishApi.getCraftingRecipe(recipeId);
+        if (recipe == null) {
+            Map<String, String> ph = new HashMap<>();
+            ph.put("%recipe_id%", recipeId);
+            player.sendMessage(messages.getMessage("craft-not-found", true, ph));
+            return;
+        }
+
+        boolean nowFavorite = favoritesManager.toggleFavorite(player.getUniqueId(), recipeId);
+
+        // Play a feedback sound
+        try {
+            Sound sound = nowFavorite
+                    ? parseSound(plugin.getConfig().getString("sounds.favorite-add", "UI_TOAST_CHALLENGE_COMPLETE"),
+                            Sound.UI_TOAST_CHALLENGE_COMPLETE)
+                    : parseSound(plugin.getConfig().getString("sounds.favorite-remove", "ENTITY_ITEM_PICKUP"),
+                            Sound.ENTITY_ITEM_PICKUP);
+            player.playSound(player, sound, 0.6f, 1.2f);
+        } catch (Exception ignored) {
+        }
+
+        // Send a chat confirmation.
+        // IMPORTANT: use getMessageRaw (NOT getMessage) so the recipe's
+        // display-name MiniMessage tags (e.g. <bold><#00CED1>Ocean's Wrath)
+        // survive placeholder substitution and are deserialized by MiniMessage
+        // instead of being escaped and shown as raw text in chat.
+        Map<String, String> ph = new HashMap<>();
+        ph.put("%recipe%", describeItem(recipe.resultItem()));
+        String msgKey = nowFavorite ? "favorite-added" : "favorite-removed";
+        player.sendMessage(messages.getMessageRaw(msgKey, true, ph));
+
+        // ─── Refresh ONLY slot 51 in-place — no GUI close/reopen ───
+        // This keeps the player's cursor and view position stable.
+        if (isPlayerViewingCraftingGUI(player)) {
+            Inventory topInv = player.getOpenInventory().getTopInventory();
+            if (topInv.getHolder() instanceof CraftingGUIHolder holder
+                    && holder.getScreenType() == CraftingGUIHolder.ScreenType.DETAIL
+                    && recipeId.equals(holder.getRecipeId())) {
+                topInv.setItem(slotFavorite, buildFavoriteButton(player, recipeId));
+            }
+        }
     }
 
     private ItemStack buildIngredientsItem(Player player, CraftRecipe recipe) {
@@ -827,12 +1574,17 @@ public class CraftingGUIManager {
 
         ingMeta.displayName(messages.getMessage("detail-ingredients-name"));
         List<Component> ingLore = new ArrayList<>();
-        for (CraftRecipe.Ingredient ing : recipe.ingredients()) {
-            int owned = countInInventory(player, ing.item());
+        // v1.1.2 — NPE hardening: null ingredients list / null ingredient entry / null item
+        List<CraftRecipe.Ingredient> ingredients = recipe.ingredients();
+        if (ingredients == null) ingredients = List.of();
+        for (CraftRecipe.Ingredient ing : ingredients) {
+            if (ing == null) continue;
+            ItemStack ingItem = ing.item();
+            int owned = ingItem == null ? 0 : countInInventory(player, ingItem);
             boolean ok = owned >= ing.amount();
             Map<String, String> ph = new HashMap<>();
             ph.put("%color%", ok ? "<green>" : "<red>");
-            ph.put("%name%", describeItem(ing.item()));
+            ph.put("%name%", describeItem(ingItem));
             ph.put("%needed%", String.valueOf(ing.amount()));
             ph.put("%owned%", String.valueOf(owned));
             ingLore.add(messages.getMessageRaw("detail-ingredient-line", ph));
@@ -863,6 +1615,33 @@ public class CraftingGUIManager {
         Map<String, String> maxPh = new HashMap<>();
         maxPh.put("%count%", String.valueOf(maxCraftable));
         ingLore.add(messages.getMessage("detail-max-craftable", maxPh));
+
+        // Üretim ücreti satırı — sadece ekonomi açıksa göster (Faz 1.0.1)
+        // Tek üretim ücreti ve (maxCraftable > 1 ise) toplu üretim ücretini göster.
+        // Bakiye yetmiyorsa kırmızı, yeterliyse yeşil olsun.
+        if (economyManager != null && economyManager.isEnabled()) {
+            double singleFee = economyManager.getFee(recipe);
+            double balance = economyManager.getBalance(player.getUniqueId());
+            boolean canAffordSingle = balance >= singleFee;
+            Map<String, String> feePh = new HashMap<>();
+            feePh.put("%color%", canAffordSingle ? "<green>" : "<red>");
+            feePh.put("%fee%", String.format(java.util.Locale.US, "%.2f", singleFee));
+            // getMessageRaw — %color% carries a real MiniMessage tag (<green>/<red>)
+            // that MUST be deserialized, not escaped. This is the fix for the
+            // raw "<red>Craft Fee: $100.00" rendering bug.
+            ingLore.add(messages.getMessageRaw("detail-craft-fee-line", feePh));
+
+            if (maxCraftable > 1) {
+                double bulkFee = economyManager.calculateBulkFee(recipe, maxCraftable);
+                boolean canAffordBulk = balance >= bulkFee;
+                Map<String, String> bulkPh = new HashMap<>();
+                bulkPh.put("%color%", canAffordBulk ? "<green>" : "<red>");
+                bulkPh.put("%fee%", String.format(java.util.Locale.US, "%.2f", bulkFee));
+                bulkPh.put("%count%", String.valueOf(maxCraftable));
+                // getMessageRaw — same reason as the single fee line above.
+                ingLore.add(messages.getMessageRaw("detail-craft-fee-bulk-line", bulkPh));
+            }
+        }
 
         ingMeta.lore(ingLore);
         ingredientsItem.setItemMeta(ingMeta);
@@ -1117,6 +1896,10 @@ public class CraftingGUIManager {
     // =====================================================================
 
     public void openBlackMarketMenu(Player player) {
+        openBlackMarketMenu(player, 0);
+    }
+
+    public void openBlackMarketMenu(Player player, int page) {
         if (blackMarketManager == null || !blackMarketManager.isEnabled()) {
             player.sendMessage(messages.getMessage("blackmarket-refresh-disabled", true));
             return;
@@ -1134,10 +1917,19 @@ public class CraftingGUIManager {
                 54,
                 messages.getMessage("blackmarket-title", titlePh));
 
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 54, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+        // v1.1.0 — standardized chrome + paginated stock
+        fillChrome54(inv);
 
-        int slot = 0;
+        // Pre-fetch player state once (avoid hitting PhoenixFish's cache repeatedly
+        // inside the loop — balance is per-player, learned-state is per-recipe)
+        UUID playerUuid = player.getUniqueId();
+        double playerBalance = fishApi.getBalance(playerUuid);
+        int purchaseLimit = blackMarketManager.getPurchaseLimit();
+        int purchaseCount = blackMarketManager.getPurchaseCount(playerUuid);
+        boolean alreadyBoughtThisCycle = purchaseLimit > 0 && purchaseCount >= purchaseLimit;
+
+        // Build the full list of stock items (resolved to recipes), then slice.
+        List<ItemStack> allStockItems = new ArrayList<>();
         for (Map.Entry<String, Double> entry : stock.entrySet()) {
             String recipeId = entry.getKey();
             double price = entry.getValue();
@@ -1145,41 +1937,74 @@ public class CraftingGUIManager {
             com.phoenix.fish.api.CraftRecipe recipe = fishApi.getCraftingRecipe(recipeId);
             if (recipe == null) continue;
 
-            ItemStack icon = recipe.resultItem().clone();
+            // v1.1.2 — NPE guard: skip recipes with null resultItem (corrupted
+            // PhoenixFish data). Previously this would NPE on .clone() and
+            // abort the entire black-market render, leaving an empty GUI.
+            ItemStack resultRaw = recipe.resultItem();
+            if (resultRaw == null) {
+                plugin.getLogger().warning("Black market recipe '" + recipeId
+                        + "' has null resultItem() — skipping.");
+                continue;
+            }
+            ItemStack icon = resultRaw.clone();
             ItemMeta meta = icon.getItemMeta();
             if (meta == null) continue;
 
-            // Set display name with dark_red color
-            String recipeName = describeItem(recipe.resultItem());
+            String recipeName = describeItem(resultRaw);
             Map<String, String> namePh = new HashMap<>();
             namePh.put("%recipe%", recipeName);
             meta.displayName(messages.getMessageRaw("blackmarket-item-name", namePh));
 
-            // Lore
+            boolean alreadyLearned = recipeManager != null
+                    && recipeManager.isEnabled()
+                    && recipeManager.hasLearned(playerUuid, recipeId);
+            boolean canAfford = playerBalance >= price;
+
             Map<String, String> pricePh = new HashMap<>();
             pricePh.put("%price%", String.format("%.2f", price));
-            List<Component> lore = new ArrayList<>();
-            lore.add(messages.getMessage("blackmarket-item-lore-1", pricePh));
-            lore.add(messages.getMessage("blackmarket-item-lore-2"));
-            lore.add(messages.getMessage("blackmarket-item-lore-3"));
-            meta.lore(lore);
+            Map<String, String> balancePh = new HashMap<>();
+            balancePh.put("%balance%", String.format("%.2f", playerBalance));
 
-            // PDC: action = "blackmarket_purchase", value = recipeId + ":" + price
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.empty());
+            lore.add(messages.getMessage("blackmarket-item-lore-1", pricePh));
+            lore.add(messages.getMessage("blackmarket-item-lore-balance", balancePh));
+            if (canAfford) {
+                lore.add(messages.getMessage("blackmarket-item-affordable"));
+            } else {
+                lore.add(messages.getMessage("blackmarket-item-not-affordable"));
+            }
+            lore.add(Component.empty());
+            if (alreadyLearned) {
+                lore.add(messages.getMessage("blackmarket-item-learned"));
+            } else if (alreadyBoughtThisCycle) {
+                Map<String, String> limitPh = new HashMap<>();
+                limitPh.put("%count%", String.valueOf(purchaseCount));
+                limitPh.put("%limit%", String.valueOf(purchaseLimit));
+                lore.add(messages.getMessage("blackmarket-item-already-bought", limitPh));
+            } else {
+                lore.add(messages.getMessage("blackmarket-item-lore-2"));
+            }
+            lore.add(messages.getMessage("blackmarket-item-lore-3"));
+
+            meta.lore(lore);
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "blackmarket_purchase");
             meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING,
                     recipeId + ":" + String.format("%.2f", price));
-
             icon.setItemMeta(meta);
-            inv.setItem(slot, icon);
-            slot++;
-            if (slot >= 45) break;
+            allStockItems.add(icon);
         }
 
-        // Slot 49: back to main menu
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(49, createButton(parseMaterial(backMat, Material.ARROW),
-                "category-back-to-main", List.of(),
-                "main", "none"));
+        // Paginate
+        int itemsPerPage = getItemsPerPage();
+        int totalPages = Math.max(1, (int) Math.ceil((double) allStockItems.size() / itemsPerPage));
+        if (page < 0) page = 0;
+        if (page >= totalPages) page = totalPages - 1;
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, allStockItems.size());
+        populateContent(inv, allStockItems.subList(start, end));
+
+        renderActionBar54(inv, player, MENU_BLACKMARKET, null, page, totalPages, false, null);
 
         player.openInventory(inv);
     }
@@ -1266,12 +2091,18 @@ public class CraftingGUIManager {
     // =====================================================================
 
     public void openRecipesMenu(Player player) {
+        openRecipesMenu(player, 0);
+    }
+
+    public void openRecipesMenu(Player player, int page) {
         if (recipeManager == null || !recipeManager.isEnabled()) {
             player.sendMessage(messages.getMessage("recipe-sharing-disabled", true));
             return;
         }
 
+        // v1.1.2 — NPE guard: PhoenixFish may return null during a reload race.
         java.util.List<CraftRecipe> allRecipes = fishApi.getCraftingRecipes();
+        if (allRecipes == null) allRecipes = java.util.List.of();
         int total = allRecipes.size();
         int learnedCount = recipeManager.getLearnedCount(player.getUniqueId());
 
@@ -1284,13 +2115,14 @@ public class CraftingGUIManager {
                 54,
                 messages.getMessage("recipes-title", titlePh));
 
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 54, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+        // v1.1.0 — standardized chrome + multi-page pagination
+        fillChrome54(inv);
 
         String lockedMat = plugin.getConfig().getString("gui.buttons.recipe-locked", "WRITTEN_BOOK");
         String learnedMat = plugin.getConfig().getString("gui.buttons.recipe-learned", "KNOWLEDGE_BOOK");
 
-        int slot = 0;
+        // Build the full list of recipe items, then slice for the current page.
+        List<ItemStack> recipeItems = new ArrayList<>();
         for (CraftRecipe recipe : allRecipes) {
             boolean isLearned = recipeManager.hasLearned(player.getUniqueId(), recipe.id());
             Material mat = parseMaterial(
@@ -1304,7 +2136,8 @@ public class CraftingGUIManager {
             String nameKey = isLearned ? "recipe-learned-name" : "recipe-locked-name";
             Map<String, String> namePh = new HashMap<>();
             namePh.put("%name%", describeItem(recipe.resultItem()));
-            meta.displayName(messages.getMessage(nameKey, namePh));
+            // getMessageRaw — %name% may contain MiniMessage tags from rod names
+            meta.displayName(messages.getMessageRaw(nameKey, namePh));
 
             List<Component> lore = new ArrayList<>();
             lore.add(messages.getMessage(isLearned
@@ -1320,16 +2153,19 @@ public class CraftingGUIManager {
             meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
             item.setItemMeta(meta);
 
-            inv.setItem(slot, item);
-            slot++;
-            if (slot >= 45) break;
+            recipeItems.add(item);
         }
 
-        // Slot 49: back to main menu
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(49, createButton(parseMaterial(backMat, Material.ARROW),
-                "category-back-to-main", List.of(),
-                "main", "none"));
+        // Paginate
+        int itemsPerPage = getItemsPerPage();
+        int totalPages = Math.max(1, (int) Math.ceil((double) recipeItems.size() / itemsPerPage));
+        if (page < 0) page = 0;
+        if (page >= totalPages) page = totalPages - 1;
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, recipeItems.size());
+        populateContent(inv, recipeItems.subList(start, end));
+
+        renderActionBar54(inv, player, MENU_RECIPES, null, page, totalPages, false, null);
 
         player.openInventory(inv);
     }
@@ -1344,18 +2180,17 @@ public class CraftingGUIManager {
             return;
         }
 
+        // v1.1.0 — use 54-slot standardized chrome for visual consistency.
         Inventory inv = Bukkit.createInventory(
-                new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),  // reuse MAIN holder type
-                27,
+                new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),
+                54,
                 messages.getMessage("stats-title"));
-
-        String borderMat = plugin.getConfig().getString("gui.detail-border", "GRAY_STAINED_GLASS_PANE");
-        fillBorders(inv, 27, parseMaterial(borderMat, Material.GRAY_STAINED_GLASS_PANE));
+        fillChrome54(inv);
 
         UUID uuid = player.getUniqueId();
         StatsManager.PlayerStats stats = statsManager.getStats(uuid);
 
-        // Slot 11: Personal stats book
+        // Slot 21: Personal stats book (left of center top)
         ItemStack statsItem = new ItemStack(Material.BOOK);
         ItemMeta statsMeta = statsItem.getItemMeta();
         if (statsMeta != null) {
@@ -1382,14 +2217,21 @@ public class CraftingGUIManager {
             ph.put("%time%", formatTimeAgo(stats.lastCraftTimestamp));
             lore.add(messages.getMessage("stats-last-craft", ph));
 
+            if (economyManager != null && economyManager.isEnabled()) {
+                double balance = economyManager.getBalance(uuid);
+                Map<String, String> balPh = new HashMap<>();
+                balPh.put("%balance%", String.format(java.util.Locale.US, "%.2f", balance));
+                lore.add(messages.getMessage("stats-balance", balPh));
+            }
+
             statsMeta.lore(lore);
             statsMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "none");
             statsMeta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
             statsItem.setItemMeta(statsMeta);
         }
-        inv.setItem(11, statsItem);
+        inv.setItem(21, statsItem);
 
-        // Slot 13: Leaderboard
+        // Slot 23: Leaderboard (right of center top)
         int topN = plugin.getConfig().getInt("stats.leaderboard-top-n", 10);
         List<Map.Entry<UUID, Integer>> top = statsManager.getTopCrafters(topN);
 
@@ -1421,15 +2263,65 @@ public class CraftingGUIManager {
             lbMeta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
             leaderboard.setItemMeta(lbMeta);
         }
-        inv.setItem(13, leaderboard);
+        inv.setItem(23, leaderboard);
 
-        // Slot 22: Back button
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(22, createButton(parseMaterial(backMat, Material.ARROW),
-                "detail-back-name", List.of("detail-back-lore"),
-                "main", "none"));
+        // Standardized action bar — Back to main at slot 49
+        renderActionBar54(inv, player, MENU_CATEGORY, null, 0, 1, false, null);
 
         player.openInventory(inv);
+    }
+
+    /**
+     * Re-run the player's last search and open the results at the given page.
+     * Called by the listener when the player clicks the next/prev pagination
+     * arrow on the search results menu.
+     *
+     * @param player the player
+     * @param page   zero-indexed page number
+     * @since v1.1.0
+     */
+    public void openSearchPage(Player player, int page) {
+        String query = playerState.getLastSearchQuery(player.getUniqueId());
+        if (query == null || query.isEmpty()) {
+            openMainMenu(player);
+            return;
+        }
+        performSearch(player, query, playerState.getLastSearchCategory(player.getUniqueId()));
+        // performSearch opens page 0; if the caller asked for a non-zero page,
+        // re-open at the requested page (results list is rebuilt).
+        if (page > 0) {
+            // Re-fetch the results — performSearch has already validated the
+            // query length and the search system is enabled at this point.
+            // v1.1.2 — NPE guard: getCraftingRecipes() may return null during
+            // a PhoenixFish reload race.
+            List<CraftRecipe> allRecipes = fishApi.getCraftingRecipes();
+            if (allRecipes == null) allRecipes = java.util.List.of();
+            String q = query.toLowerCase();
+            List<CraftRecipe> results = new ArrayList<>();
+            for (CraftRecipe r : allRecipes) {
+                if (r.id().toLowerCase().contains(q)) {
+                    results.add(r);
+                    continue;
+                }
+                ItemStack result = r.resultItem();
+                if (result != null && result.hasItemMeta()) {
+                    ItemMeta meta = result.getItemMeta();
+                    if (meta != null && meta.hasDisplayName()) {
+                        String name = plainText(meta.displayName()).toLowerCase();
+                        if (name.contains(q)) {
+                            results.add(r);
+                        }
+                    }
+                }
+            }
+            int maxResults = plugin.getConfig().getInt("search.max-results", 45);
+            if (results.size() > maxResults) {
+                results = results.subList(0, maxResults);
+            }
+            if (!results.isEmpty()) {
+                openSearchResultMenu(player, query, results, page);
+            }
+        }
     }
 
     // =====================================================================
@@ -1497,7 +2389,10 @@ public class CraftingGUIManager {
         }
 
         // Search across all recipes
+        // v1.1.2 — NPE guard: getCraftingRecipes() may return null during
+        // a PhoenixFish reload race.
         List<CraftRecipe> allRecipes = fishApi.getCraftingRecipes();
+        if (allRecipes == null) allRecipes = new ArrayList<>();
         if (category != null && !category.isEmpty() && !"all".equalsIgnoreCase(category)) {
             allRecipes = allRecipes.stream()
                     .filter(r -> category.equalsIgnoreCase(r.category()))
@@ -1537,41 +2432,54 @@ public class CraftingGUIManager {
             return;
         }
 
-        openSearchResultMenu(player, query, results);
+        // Remember the query so the search-results menu can paginate
+        // without asking the player to retype it (v1.1.5).
+        playerState.setLastSearchQuery(player.getUniqueId(), query);
+        playerState.setLastSearchCategory(player.getUniqueId(), null);
+
+        openSearchResultMenu(player, query, results, 0);
     }
 
     /**
-     * Open the search results menu.
+     * Open the search results menu (page 0).
      */
     private void openSearchResultMenu(Player player, String query, List<CraftRecipe> results) {
+        openSearchResultMenu(player, query, results, 0);
+    }
+
+    /**
+     * Open the search results menu at a specific page (v1.1.0 — paginated).
+     */
+    private void openSearchResultMenu(Player player, String query,
+                                        List<CraftRecipe> results, int page) {
         Map<String, String> titlePh = new HashMap<>();
         titlePh.put("%query%", query);
         titlePh.put("%count%", String.valueOf(results.size()));
-        Component title = messages.getMessage("search-title-with-count", titlePh);
+        Component title = messages.getMessageRaw("search-title-with-count", titlePh);
 
         Inventory inv = Bukkit.createInventory(
                 new CraftingGUIHolder(CraftingGUIHolder.ScreenType.MAIN),
                 54,
                 title);
 
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 54, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+        // v1.1.0 — standardized chrome
+        fillChrome54(inv);
 
-        // Recipe icons (slot 0-44)
-        int maxSlots = getItemsPerPage();
-        int slot = 0;
+        // Build icons for ALL results, then slice for the current page.
+        List<ItemStack> allItems = new ArrayList<>();
         for (CraftRecipe recipe : results) {
-            if (slot >= maxSlots) break;
-            ItemStack icon = buildRecipeIcon(player, recipe);
-            inv.setItem(slot, icon);
-            slot++;
+            allItems.add(buildRecipeIcon(player, recipe));
         }
 
-        // Slot 49: back to main menu
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(49, createButton(parseMaterial(backMat, Material.ARROW),
-                "category-back-to-main", List.of(),
-                "main", "none"));
+        int itemsPerPage = getItemsPerPage();
+        int totalPages = Math.max(1, (int) Math.ceil((double) allItems.size() / itemsPerPage));
+        if (page < 0) page = 0;
+        if (page >= totalPages) page = totalPages - 1;
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, allItems.size());
+        populateContent(inv, allItems.subList(start, end));
+
+        renderActionBar54(inv, player, MENU_SEARCH, null, page, totalPages, false, null);
 
         player.openInventory(inv);
     }
@@ -1581,6 +2489,10 @@ public class CraftingGUIManager {
     // =====================================================================
 
     public void openAchievementsMenu(Player player) {
+        openAchievementsMenu(player, 0);
+    }
+
+    public void openAchievementsMenu(Player player, int page) {
         if (achievementManager == null || !achievementManager.isEnabled()) {
             player.sendMessage(messages.getMessage("achievements-disabled-message", true));
             return;
@@ -1599,14 +2511,14 @@ public class CraftingGUIManager {
                 54,
                 messages.getMessage("achievements-title", titlePh));
 
-        String borderMat = plugin.getConfig().getString("gui.category-border", "BLACK_STAINED_GLASS_PANE");
-        fillBorders(inv, 54, parseMaterial(borderMat, Material.BLACK_STAINED_GLASS_PANE));
+        // v1.1.0 — standardized chrome + multi-page pagination
+        fillChrome54(inv);
 
         Set<String> unlockedIds = achievementManager.getUnlocked(player.getUniqueId());
         String lockedMat = plugin.getConfig().getString("gui.buttons.achievement-locked", "GRAY_DYE");
         String unlockedMat = plugin.getConfig().getString("gui.buttons.achievement-unlocked", "GOLD_INGOT");
 
-        int slot = 0;
+        List<ItemStack> achItems = new ArrayList<>();
         for (AchievementManager.Achievement ach : achievements.values()) {
             boolean isUnlocked = unlockedIds.contains(ach.id);
             Material mat = parseMaterial(
@@ -1617,7 +2529,6 @@ public class CraftingGUIManager {
             ItemMeta meta = item.getItemMeta();
             if (meta == null) continue;
 
-            // Faz 0.7.0: tier prefix in name — use getMessageRaw to preserve MiniMessage tags
             String tierKey = "achievement-tier-" + ach.tier;
             String tierPrefix = messages.getPlainMessage(tierKey);
             String achName = messages.getPlainMessage(ach.nameKey);
@@ -1627,7 +2538,6 @@ public class CraftingGUIManager {
             String nameKey = isUnlocked ? "achievement-unlocked-name" : "achievement-locked-name";
             Map<String, String> namePh = new HashMap<>();
             namePh.put("%name%", displayName);
-            // Use getMessageRaw — tier prefixes contain MiniMessage tags that should NOT be escaped
             meta.displayName(messages.getMessageRaw(nameKey, namePh));
 
             Map<String, String> descPh = new HashMap<>();
@@ -1638,7 +2548,6 @@ public class CraftingGUIManager {
                     ? "achievement-unlocked-lore-1"
                     : "achievement-locked-lore-1", descPh));
 
-            // Faz 0.7.0: progress line (only for locked achievements with progress)
             if (!isUnlocked) {
                 String progressStr = achievementManager.getProgressString(player.getUniqueId(), ach);
                 if (!progressStr.equals("—")) {
@@ -1662,16 +2571,19 @@ public class CraftingGUIManager {
             meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, "none");
             item.setItemMeta(meta);
 
-            inv.setItem(slot, item);
-            slot++;
-            if (slot >= 45) break; // border is at row 0 and 5
+            achItems.add(item);
         }
 
-        // Slot 49: Back button
-        String backMat = plugin.getConfig().getString("gui.buttons.back", "ARROW");
-        inv.setItem(49, createButton(parseMaterial(backMat, Material.ARROW),
-                "category-back-to-main", List.of(),
-                "main", "none"));
+        // Paginate
+        int itemsPerPage = getItemsPerPage();
+        int totalPages = Math.max(1, (int) Math.ceil((double) achItems.size() / itemsPerPage));
+        if (page < 0) page = 0;
+        if (page >= totalPages) page = totalPages - 1;
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, achItems.size());
+        populateContent(inv, achItems.subList(start, end));
+
+        renderActionBar54(inv, player, MENU_ACHIEVEMENTS, null, page, totalPages, false, null);
 
         player.openInventory(inv);
     }
@@ -1889,6 +2801,9 @@ public class CraftingGUIManager {
 
     @SuppressWarnings("deprecation")
     private boolean matchesTemplate(ItemStack inv, ItemStack template) {
+        // v1.1.2 — NPE guard: a null template (corrupted ingredient) never
+        // matches anything; previously this NPE'd at template.getType().
+        if (template == null || inv == null) return false;
         if (inv.getType() != template.getType()) return false;
         return getCmd(inv) == getCmd(template);
     }
@@ -1913,13 +2828,37 @@ public class CraftingGUIManager {
      */
     private String describeItem(ItemStack item) {
         if (item == null) return "???";
+
+        // 1) If the item has a custom display name (e.g. "Cosmic Rod" set by
+        //    PhoenixFish's rods.yml/baits.yml), use it — preserve colors via
+        //    MiniMessage serialization so the lore stays styled.
         if (item.hasItemMeta()) {
             ItemMeta m = item.getItemMeta();
             if (m != null && m.hasDisplayName()) {
-                // Convert Component back to MiniMessage string to preserve colors
                 return miniMessage.serialize(m.displayName());
             }
         }
+
+        // 2) For vanilla items without a custom display name, return a
+        //    MiniMessage <lang:...> tag that points at the vanilla
+        //    translation key. The CLIENT resolves this against its own
+        //    language file, so a player on a Chinese client sees "末影水晶"
+        //    instead of the raw enum name "end crystal".
+        //
+        //    Paper API: Material.translationKey() (since 1.13.1) returns
+        //    e.g. "block.minecraft.fishing_rod" or "item.minecraft.end_crystal".
+        //    MiniMessage: <lang:block.minecraft.fishing_rod> — supported by
+        //    Adventure 4.x (bundled with Paper 1.21).
+        try {
+            String translationKey = item.getType().translationKey();
+            if (translationKey != null && !translationKey.isEmpty()) {
+                return "<lang:" + translationKey + ">";
+            }
+        } catch (Throwable ignored) {
+            // Old Bukkit builds may not have translationKey() — fall through.
+        }
+
+        // 3) Last-resort fallback: raw enum name (legacy behavior).
         return item.getType().name().replace("_", " ").toLowerCase();
     }
 

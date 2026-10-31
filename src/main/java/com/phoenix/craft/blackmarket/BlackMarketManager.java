@@ -31,7 +31,9 @@ public class BlackMarketManager {
 
     private final PhoenixCraft plugin;
     private final PhoenixFishAPI fishApi;
-    private final boolean enabled;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isEnabled()}. */
+    private final boolean enabledAtBoot;
 
     /** Current stock: recipeId → price. */
     private final Map<String, Double> stock = new LinkedHashMap<>();
@@ -48,9 +50,9 @@ public class BlackMarketManager {
     public BlackMarketManager(PhoenixCraft plugin, PhoenixFishAPI fishApi) {
         this.plugin = plugin;
         this.fishApi = fishApi;
-        this.enabled = plugin.getConfig().getBoolean("blackmarket.enabled", false);
+        this.enabledAtBoot = plugin.getConfig().getBoolean("blackmarket.enabled", false);
 
-        if (enabled) {
+        if (enabledAtBoot) {
             load();
             scheduleRefresh();
             plugin.getLogger().info("BlackMarketManager enabled — "
@@ -60,8 +62,15 @@ public class BlackMarketManager {
         }
     }
 
+    /**
+     * Live check against the current config — picks up /pcraft reload
+     * changes immediately. If the admin disables the black market mid-runtime,
+     * the existing stock + scheduled task are left in place (the scheduler
+     * task will just no-op on its next run since isEnabled() returns false);
+     * the next /pcraft blackmarket command will be rejected by the GUI layer.
+     */
     public boolean isEnabled() {
-        return enabled;
+        return plugin.getConfig().getBoolean("blackmarket.enabled", false);
     }
 
     // =====================================================================
@@ -109,7 +118,7 @@ public class BlackMarketManager {
     }
 
     public synchronized void save() {
-        if (!enabled) return;
+        if (!isEnabled()) return;
 
         File file = getFile();
         FileConfiguration cfg = new YamlConfiguration();
@@ -160,17 +169,23 @@ public class BlackMarketManager {
             return;
         }
 
-        // Shuffle and pick stock-count recipes
-        Collections.shuffle(pool);
+        // Shuffle and pick stock-count recipes.
+        // IMPORTANT: getRecipePool() may return an IMMUTABLE list (Java 16+
+        // Stream.toList() and PhoenixFish's getCraftingRecipes() both return
+        // immutable copies). Collections.shuffle() mutates the list in place
+        // via set(), which throws UnsupportedOperationException on an
+        // immutable list. Wrap it in a mutable ArrayList first.
+        List<CraftRecipe> shuffled = new ArrayList<>(pool);
+        Collections.shuffle(shuffled);
         int stockCount = plugin.getConfig().getInt("blackmarket.stock-count", 5);
-        int count = Math.min(stockCount, pool.size());
+        int count = Math.min(stockCount, shuffled.size());
 
         double minPrice = plugin.getConfig().getDouble("blackmarket.min-price", 50);
         double maxPrice = plugin.getConfig().getDouble("blackmarket.max-price", 500);
         Random random = new Random();
 
         for (int i = 0; i < count; i++) {
-            CraftRecipe recipe = pool.get(i);
+            CraftRecipe recipe = shuffled.get(i);
             double price = minPrice + (maxPrice - minPrice) * random.nextDouble();
             price = Math.round(price * 100.0) / 100.0; // round to 2 decimals
             stock.put(recipe.id().toLowerCase(), price);
@@ -191,7 +206,11 @@ public class BlackMarketManager {
      */
     private List<CraftRecipe> getRecipePool() {
         Object poolObj = plugin.getConfig().get("blackmarket.pool");
+        // v1.1.2 — NPE guard: PhoenixFish may return null during a reload
+        // race. Treat null as an empty pool so refreshStock() no-ops cleanly
+        // instead of NPEing inside the stream pipeline below.
         List<CraftRecipe> allRecipes = fishApi.getCraftingRecipes();
+        if (allRecipes == null) allRecipes = java.util.List.of();
 
         // If pool is a string (ALL, ROD, BAIT)
         if (poolObj instanceof String) {

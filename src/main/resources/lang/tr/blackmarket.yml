@@ -1,0 +1,33 @@
+# ============================================================
+# PhoenixCraft — Black Market strings (Türkçe)
+# ============================================================
+# Stock listing, purchase flow, refresh announcements, time-remaining.
+# MiniMessage tags supported. Placeholders: %recipe% %price% %balance%
+# %time% %count% %limit% %minutes% %hours%
+# ============================================================
+
+blackmarket-title: "<dark_gray>» <dark_red><bold>KARA BORSA</bold></dark_red> <dark_gray>(%time% sonra yenilenir)"
+blackmarket-empty: "<red>Kara borsa şu an boş. Sonraki yenileme: %time%."
+blackmarket-item-name: "<dark_red>%recipe%"
+blackmarket-item-lore-1: "<gray>Fiyat: <gold>$%price%"
+blackmarket-item-lore-balance: "<gray>Bakiyen: <green>$%balance%"
+blackmarket-item-affordable: "<green><bold>✔ Yeterli bakiyen var</bold>"
+blackmarket-item-not-affordable: "<red><bold>✖ Yetersiz bakiye</bold>"
+blackmarket-item-learned: "<dark_gray><italic>Bu tarifi zaten öğrendin — satın almak anlamsız."
+blackmarket-item-already-bought: "<yellow><italic>Bu dönemde zaten satın aldın (%count%/%limit%)."
+blackmarket-item-lore-2: "<dark_gray>Satın almak için tıkla."
+blackmarket-item-lore-3: "<dark_red>Sınırlı stok!"
+blackmarket-purchase-success: "<green>✔ <white>%recipe%</white> tarif kitabı <gold>$%price%</gold>'a satın alındı!"
+blackmarket-purchase-insufficient-funds: "<red>Yetersiz bakiye! Gerekli: <yellow>$%price%</yellow>, Mevcut: $%balance%"
+blackmarket-purchase-already-bought: "<red>Bu yenilenme döneminde zaten bir tarif satın aldın."
+blackmarket-purchase-already-learned: "<red>Bu tarifi zaten biliyorsun."
+blackmarket-purchase-sold-out: "<red>Bu tarif tükendi."
+blackmarket-refresh-announce: "<dark_gray>[<dark_red>KARA BORSA</dark_red>] <gray>Yeni stok geldi! Göz atmak için <yellow>/pcraft blackmarket</yellow>."
+blackmarket-refreshed: "<green>✔ Kara borsa %count% yeni tarifle yenilendi."
+blackmarket-refresh-disabled: "<red>Kara borsa kapalı."
+blackmarket-refresh-manual-only: "<gray>Kara borsa manuel yenilemeye ayarlı."
+blackmarket-no-permission: "<red>Kara borsayı yenileme yetkin yok."
+blackmarket-next-refresh: "<gray>Sonraki yenileme: <yellow>%time%"
+blackmarket-time-minutes: "%count%dk"
+blackmarket-time-hours: "%count%sa %minutes%dk"
+blackmarket-time-expired: "<red>süresi doldu"

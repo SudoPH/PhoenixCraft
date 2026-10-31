@@ -1,0 +1,21 @@
+# ============================================================
+# PhoenixCraft — Stats & Leaderboard strings (Türkçe)
+# ============================================================
+# Per-player stats menu, leaderboard lines, time-ago formatters.
+# MiniMessage tags supported. Placeholders: %count% %xp% %time%
+# %rank% %player% %balance% %n%
+# ============================================================
+
+stats-title: "<dark_gray>» <aqua>Üretim İstatistikleri"
+stats-total-crafts: "<gray>Toplam Üretim: <white>%count%"
+stats-total-xp: "<gray>Toplam Kazanılan XP: <aqua>%xp%"
+stats-unique-recipes: "<gray>Farklı Tarif Üretildi: <white>%count%"
+stats-first-craft: "<gray>İlk Üretim: <white>%time%"
+stats-last-craft: "<gray>Son Üretim: <white>%time%"
+stats-balance: "<gray>Bakiye: <green>$%balance%"
+stats-leaderboard-header: "<gold><bold>Sunucu Top %n%"
+stats-leaderboard-line: "<yellow>%rank%. <white>%player% <dark_gray>— <aqua>%count% üretim"
+stats-leaderboard-empty: "<gray>Henüz üretim kaydedilmedi."
+stats-disabled-name: "<red><bold>İstatistik Kapalı"
+stats-disabled-lore: "<gray>İstatistik sistemi config.yml'den kapalı."
+stats-disabled-message: "<red>İstatistik sistemi kapalı."

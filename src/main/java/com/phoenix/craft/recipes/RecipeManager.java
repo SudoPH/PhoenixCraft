@@ -50,8 +50,12 @@ public class RecipeManager {
     private final PhoenixCraft plugin;
     private final PhoenixFishAPI fishApi;
     private final MessageManager messages;
-    private final boolean enabled;
-    private final boolean requireLearning;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isEnabled()}. */
+    private final boolean enabledAtBoot;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isRequireLearning()}. */
+    private final boolean requireLearningAtBoot;
     private final NamespacedKey bookKey;
 
     /** Per-player learned recipe IDs. */
@@ -64,25 +68,27 @@ public class RecipeManager {
         this.plugin = plugin;
         this.fishApi = fishApi;
         this.messages = messages;
-        this.enabled = plugin.getConfig().getBoolean("recipe-sharing.enabled", false);
-        this.requireLearning = plugin.getConfig().getBoolean("recipe-sharing.require-learning", false);
+        this.enabledAtBoot = plugin.getConfig().getBoolean("recipe-sharing.enabled", false);
+        this.requireLearningAtBoot = plugin.getConfig().getBoolean("recipe-sharing.require-learning", false);
         this.bookKey = new NamespacedKey(plugin, BOOK_RECIPE_KEY);
 
-        if (enabled) {
+        if (enabledAtBoot) {
             load();
             plugin.getLogger().info("RecipeManager enabled — "
-                    + learned.size() + " players tracked, requireLearning=" + requireLearning);
+                    + learned.size() + " players tracked, requireLearning=" + requireLearningAtBoot);
         } else {
             plugin.getLogger().info("RecipeManager disabled (recipe-sharing.enabled=false).");
         }
     }
 
+    /** Live config read — picks up /pcraft reload changes immediately. */
     public boolean isEnabled() {
-        return enabled;
+        return plugin.getConfig().getBoolean("recipe-sharing.enabled", false);
     }
 
+    /** Live config read — picks up /pcraft reload changes immediately. */
     public boolean isRequireLearning() {
-        return requireLearning;
+        return plugin.getConfig().getBoolean("recipe-sharing.require-learning", false);
     }
 
     public NamespacedKey getBookKey() {
@@ -116,7 +122,7 @@ public class RecipeManager {
     }
 
     public synchronized void save() {
-        if (!enabled) return;
+        if (!isEnabled()) return;
         if (!dirty) return;
 
         File file = getLearnedFile();
@@ -146,7 +152,7 @@ public class RecipeManager {
      * Always returns true if the recipe-sharing system is disabled.
      */
     public boolean hasLearned(UUID uuid, String recipeId) {
-        if (!enabled) return true;
+        if (!isEnabled()) return true;
         Set<String> set = learned.get(uuid);
         return set != null && set.contains(recipeId.toLowerCase());
     }
@@ -155,12 +161,12 @@ public class RecipeManager {
      * Get the set of learned recipe IDs for a player.
      */
     public Set<String> getLearned(UUID uuid) {
-        if (!enabled) return Collections.emptySet();
+        if (!isEnabled()) return Collections.emptySet();
         return Collections.unmodifiableSet(learned.getOrDefault(uuid, Collections.emptySet()));
     }
 
     public int getLearnedCount(UUID uuid) {
-        if (!enabled) return 0;
+        if (!isEnabled()) return 0;
         Set<String> set = learned.get(uuid);
         return set != null ? set.size() : 0;
     }
@@ -171,8 +177,8 @@ public class RecipeManager {
      * or if require-learning is false (cosmetic only).
      */
     public boolean canCraftRecipe(UUID uuid, CraftRecipe recipe) {
-        if (!enabled) return true;
-        if (!requireLearning) return true;
+        if (!isEnabled()) return true;
+        if (!isRequireLearning()) return true;
         return hasLearned(uuid, recipe.id());
     }
 
@@ -184,7 +190,7 @@ public class RecipeManager {
      * Teach a recipe to a player. Returns false if already learned.
      */
     public boolean learnRecipe(UUID uuid, String recipeId) {
-        if (!enabled) return false;
+        if (!isEnabled()) return false;
         recipeId = recipeId.toLowerCase();
 
         Set<String> set = learned.computeIfAbsent(uuid, k -> new HashSet<>());
@@ -198,10 +204,61 @@ public class RecipeManager {
     }
 
     /**
+     * Make a player forget a specific recipe (the inverse of
+     * {@link #learnRecipe}). Used by the recipe-decay system to expire
+     * learned recipes after a configurable period.
+     *
+     * <p>Returns {@code true} if the recipe was actually learned and has
+     * now been removed; {@code false} if the player never had it learned
+     * (no-op). The change is immediately persisted to
+     * {@code learned_recipes.yml}.</p>
+     *
+     * @param uuid     the player's UUID
+     * @param recipeId the recipe id to forget (case-insensitive — normalised
+     *                 to lowercase to match {@link #learnRecipe})
+     * @return true if the recipe was removed, false if it wasn't learned
+     * @since 1.0.5
+     */
+    public boolean forgetPlayerRecipe(UUID uuid, String recipeId) {
+        if (!isEnabled()) return false;
+        if (recipeId == null) return false;
+        recipeId = recipeId.toLowerCase();
+
+        Set<String> set = learned.get(uuid);
+        if (set == null || !set.remove(recipeId)) {
+            return false;
+        }
+        dirty = true;
+        save();
+        return true;
+    }
+
+    /**
+     * Make a player forget <em>all</em> learned recipes. Used by the
+     * recipe-decay system when a full reset is needed (e.g. an admin
+     * command or a seasonal wipe).
+     *
+     * @param uuid the player's UUID
+     * @return the number of recipes that were removed
+     * @since 1.0.5
+     */
+    public int forgetAllRecipes(UUID uuid) {
+        if (!isEnabled()) return 0;
+        Set<String> set = learned.remove(uuid);
+        if (set == null || set.isEmpty()) {
+            return 0;
+        }
+        int removed = set.size();
+        dirty = true;
+        save();
+        return removed;
+    }
+
+    /**
      * Teach a recipe to a player and notify them.
      */
     public void learnRecipeAndNotify(Player player, String recipeId) {
-        if (!enabled) {
+        if (!isEnabled()) {
             player.sendMessage(messages.getMessage("recipe-sharing-disabled", true));
             return;
         }
@@ -296,7 +353,7 @@ public class RecipeManager {
      * Handle right-click of a recipe book item. Teaches the recipe if valid.
      */
     public void handleBookUse(Player player, ItemStack book) {
-        if (!enabled) {
+        if (!isEnabled()) {
             player.sendMessage(messages.getMessage("recipe-sharing-disabled", true));
             return;
         }

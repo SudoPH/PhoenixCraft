@@ -1,0 +1,32 @@
+# ============================================================
+# PhoenixCraft — Recipe Rental strings (Türkçe)
+# ============================================================
+# Offer / accept / list / cancel / expiry flows.
+# MiniMessage tags supported. Placeholders: %recipe% %price% %minutes%
+# %player% %owner% %balance% %min% %max%
+# ============================================================
+
+rental-usage: "<yellow>Kullanım: /pcraft rent <offer|accept|list|cancel> ..."
+rental-disabled: "<red>Tarif kiralama kapalı."
+rental-offer-usage: "<yellow>Kullanım: /pcraft rent offer <tarif-id> <fiyat> <dakika>"
+rental-offer-success: "<green>✔ Kiralama teklifi oluşturuldu: <white>%recipe%</white> — <gold>$%price%</gold> / <yellow>%minutes%dk</yellow>"
+rental-offer-not-learned: "<red>Öğrenmediğin bir tarifi kiraya veremezsin."
+rental-offer-too-many: "<red>Çok fazla aktif teklifin var (maks %max%)."
+rental-offer-invalid-duration: "<red>Süre %min% ile %max% dakika arasında olmalı."
+rental-offer-invalid-price: "<red>Fiyat $%min% ile $%max% arasında olmalı."
+rental-accept-usage: "<yellow>Kullanım: /pcraft rent accept <oyuncu> <tarif-id>"
+rental-accept-not-found: "<red><yellow>%player%</yellow>'dan <yellow>%recipe%</yellow> için aktif teklif yok."
+rental-accept-insufficient-funds: "<red>Yetersiz bakiye! Gerekli: <yellow>$%price%</yellow>, Mevcut: $%balance%"
+rental-accept-too-many: "<red>Çok fazla aktif kiralaman var (maks %max%)."
+rental-accept-success: "<green>✔ <yellow>%owner%</yellow>'dan <white>%recipe%</white> kiralandı — <gold>$%price%</gold> / <yellow>%minutes%dk</yellow>"
+rental-accept-owner-notify: "<green>✔ <yellow>%player%</yellow> <white>%recipe%</white> tarifini <gold>$%price%</gold>'a kiraladı."
+rental-list-header: "<gold><bold>Aktif Kiralama Teklifleri"
+rental-list-line: "<yellow>%player% <gray>— <white>%recipe% <dark_gray>| <gold>$%price% <dark_gray>| <yellow>%minutes%dk"
+rental-list-empty: "<gray>Aktif kiralama teklifi yok."
+rental-cancel-usage: "<yellow>Kullanım: /pcraft rent cancel <tarif-id>"
+rental-cancel-success: "<green>✔ <white>%recipe%</white> için kiralama teklifi iptal edildi."
+rental-cancel-not-found: "<red><yellow>%recipe%</yellow> için aktif teklifin yok."
+rental-expired: "<red><white>%recipe%</white> kiralamanın süresi doldu."
+rental-fee-charged: "<dark_gray>İşlem ücreti: <red>-$%fee%"
+rental-list-title: "<dark_gray>» <gold>Kiralama Teklifleri"
+rental-my-rentals-title: "<dark_gray>» <gold>Aktif Kiralamalarım"

@@ -11,6 +11,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +37,9 @@ public class DiscoveryManager {
 
     private final PhoenixCraft plugin;
     private final MessageManager messages;
-    private final boolean enabled;
+    /** Cached for the constructor's initial boot decision only — reload picks
+     *  up the live value via {@link #isEnabled()}. */
+    private final boolean enabledAtBoot;
 
     private final Map<UUID, Set<String>> discovered = new ConcurrentHashMap<>();
     private volatile boolean dirty = false;
@@ -44,9 +47,9 @@ public class DiscoveryManager {
     public DiscoveryManager(PhoenixCraft plugin, MessageManager messages) {
         this.plugin = plugin;
         this.messages = messages;
-        this.enabled = plugin.getConfig().getBoolean("discovery.enabled", true);
+        this.enabledAtBoot = plugin.getConfig().getBoolean("discovery.enabled", true);
 
-        if (enabled) {
+        if (enabledAtBoot) {
             load();
             plugin.getLogger().info("DiscoveryManager enabled — tracking "
                     + discovered.size() + " players' discoveries.");
@@ -55,8 +58,9 @@ public class DiscoveryManager {
         }
     }
 
+    /** Live config read — picks up /pcraft reload changes immediately. */
     public boolean isEnabled() {
-        return enabled;
+        return plugin.getConfig().getBoolean("discovery.enabled", true);
     }
 
     private File getFile() {
@@ -79,7 +83,7 @@ public class DiscoveryManager {
     }
 
     public synchronized void save() {
-        if (!enabled || !dirty) return;
+        if (!isEnabled() || !dirty) return;
         File file = getFile();
         FileConfiguration cfg = new YamlConfiguration();
         for (Map.Entry<UUID, Set<String>> entry : discovered.entrySet()) {
@@ -99,13 +103,13 @@ public class DiscoveryManager {
     }
 
     public boolean hasDiscovered(UUID uuid, String recipeId) {
-        if (!enabled) return true;
+        if (!isEnabled()) return true;
         Set<String> set = discovered.get(uuid);
         return set != null && set.contains(recipeId.toLowerCase());
     }
 
     public int getDiscoveredCount(UUID uuid) {
-        if (!enabled) return 0;
+        if (!isEnabled()) return 0;
         Set<String> set = discovered.get(uuid);
         return set != null ? set.size() : 0;
     }
@@ -117,7 +121,7 @@ public class DiscoveryManager {
      * @return bonus XP (0 if not first craft or disabled)
      */
     public int checkDiscovery(Player player, CraftRecipe recipe, int craftedCount) {
-        if (!enabled) return 0;
+        if (!isEnabled()) return 0;
         UUID uuid = player.getUniqueId();
         String recipeId = recipe.id().toLowerCase();
         if (hasDiscovered(uuid, recipeId)) return 0;
@@ -143,10 +147,23 @@ public class DiscoveryManager {
     }
 
     private void notifyDiscovery(Player player, CraftRecipe recipe, int bonusXp) {
-        String recipeName = recipe.resultItem().hasItemMeta()
-                && recipe.resultItem().getItemMeta().hasDisplayName()
-                ? MiniMessage.miniMessage().serialize(recipe.resultItem().getItemMeta().displayName())
-                : recipe.id();
+        // v1.1.2 — NPE hardening: recipe.resultItem() can be null if the
+        // PhoenixFish recipe definition is corrupted or being reloaded
+        // mid-craft. Previously this NPE'd on .hasItemMeta() and silently
+        // swallowed the discovery notification (the catch-all try block in
+        // checkDiscovery swallowed the NPE, so the player never got told
+        // they discovered a new recipe — only the XP was awarded).
+        ItemStack resultItem = recipe.resultItem();
+        String recipeName;
+        if (resultItem == null) {
+            recipeName = recipe.id();
+        } else if (resultItem.hasItemMeta()
+                && resultItem.getItemMeta() != null
+                && resultItem.getItemMeta().hasDisplayName()) {
+            recipeName = MiniMessage.miniMessage().serialize(resultItem.getItemMeta().displayName());
+        } else {
+            recipeName = recipe.id();
+        }
 
         Map<String, String> ph = Map.of("%recipe%", recipeName, "%xp%", String.valueOf(bonusXp));
 
